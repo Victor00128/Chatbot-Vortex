@@ -55,12 +55,12 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message }) => {
   
   const bubbleClasses = `rounded-xl px-4 py-2.5 max-w-xl shadow-md flex flex-col ${
     isUser
-      ? 'bg-blue-600 text-white rounded-br-none'
-      : 'bg-zinc-700 text-gray-100 rounded-bl-none'
+      ? 'bg-blue-800 text-white rounded-br-none'
+      : 'bg-zinc-800 text-gray-100 rounded-bl-none'
   }`;
   
   const speaker = isUser ? 'Tú' : 'Bot';
-  const speakerColor = isUser ? 'text-blue-200' : 'text-red-400';
+  const speakerColor = isUser ? 'text-blue-300' : 'text-gray-300';
 
   return (
     <div className={containerClasses}>

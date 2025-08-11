@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className={`
       fixed inset-y-0 left-0 z-30 w-64
-      bg-zinc-900 border-r border-zinc-800
+      bg-[#1C1C1C] border-r border-zinc-800
       transform transition-transform duration-300 ease-in-out
       md:relative md:translate-x-0 md:flex-shrink-0
       ${isOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onNewConversation}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-red-600 text-white font-semibold rounded-lg px-4 py-2 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors duration-200 disabled:bg-zinc-700 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 bg-blue-700 text-white font-semibold rounded-lg px-4 py-2 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors duration-200 disabled:bg-zinc-700 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -90,10 +90,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                       onChange={(e) => setTempTitle(e.target.value)}
                       onBlur={handleRenameConfirm}
                       onKeyDown={(e) => e.key === 'Enter' && handleRenameConfirm()}
-                      className="w-full bg-zinc-700 border border-red-500 rounded-md text-sm font-medium px-2 py-2 text-white outline-none"
+                      className="w-full bg-zinc-800 border border-blue-500 rounded-md text-sm font-medium px-2 py-2 text-white outline-none"
                     />
                 ) : (
-                    <div className={`flex items-center rounded-md ${activeConversationId === convo.id ? 'bg-zinc-700' : 'hover:bg-zinc-800/50'}`}>
+                    <div className={`flex items-center rounded-md ${activeConversationId === convo.id ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}`}>
                         <a
                         href="#"
                         onClick={(e) => {

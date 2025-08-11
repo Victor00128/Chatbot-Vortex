@@ -42,10 +42,10 @@ const CodeRenderer: NonNullable<Components['code']> = ({node, inline, className,
     };
     
     return !inline && match ? (
-      <div className="relative group bg-[#282c34] rounded-md my-2">
+      <div className="relative group bg-[#282c34] rounded-md my-2 overflow-x-auto">
         <button
             onClick={handleCopy}
-            className="absolute top-2 right-2 p-1.5 bg-zinc-800/70 rounded-md text-zinc-300 hover:bg-zinc-700 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 z-10"
+            className="absolute top-2 right-2 p-1.5 bg-zinc-800/70 rounded-md text-zinc-300 hover:bg-zinc-700 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-all duration-200 z-10"
             aria-label="Copy code to clipboard"
         >
             {isCopied ? <CheckIcon /> : <CopyIcon />}

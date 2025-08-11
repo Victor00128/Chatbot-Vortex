@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { ChatSession } from '@google/generative-ai';
 import 'katex/dist/katex.min.css';
 import { Sender, ChatMessage, AIPersonality, PERSONALITIES, Conversation } from './types';
-import { startChat, generateContent } from './services/geminiService';
+import { startChat, internetSearchTool } from './services/geminiService';
 import { analyzeFileWithBackend } from './services/backendService';
+import { performSearch } from './services/searchService';
 import { getOpenAIStream } from './services/openaiService';
 import { toastEvents } from './utils/toast';
 import Header from './components/Header';
@@ -23,6 +24,8 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(!!document.fullscreenElement);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isSearchEnabled, setIsSearchEnabled] = useState<boolean>(true);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
 
   const activeConversation = activeConversationId ? conversations[activeConversationId] : null;
 
@@ -79,7 +82,9 @@ const App: React.FC = () => {
       const apiHistory = activeConversation.messages
         .filter(m => m.id !== 'initial-message' && !m.fileInfo)
         .map(msg => ({ role: msg.sender === Sender.User ? 'user' : 'model', parts: [{ text: msg.text }] }));
-      const chatSession = startChat(config.systemInstruction, config.model, apiHistory);
+
+      const tools: any[] = isSearchEnabled ? [internetSearchTool] : [];
+      const chatSession = startChat(config.systemInstruction, config.model, apiHistory, tools);
       setChat(chatSession);
     } catch (e) {
       handleApiError(e, 'conversation switch');
@@ -101,6 +106,36 @@ const App: React.FC = () => {
 
   const handleSendMessage = useCallback(async (text: string, file?: File) => {
     if ((!text && !file) || !activeConversationId) return;
+
+    // --- PASO 3: IA CONVERSACIONAL (RISAS) ---
+    const laughExpressions = [/^j[aeiou]+j[aeiou]+j?[aeiou]*$/i, /^x[d]+$/i, /^lo+l$/i, /😂/, /🤣/];
+    const isLaugh = laughExpressions.some(regex => regex.test(text.trim()));
+
+    if (isLaugh && !file) {
+      const userMessage: ChatMessage = { id: Date.now().toString(), sender: Sender.User, text };
+
+      const lastAiMessage = conversations[activeConversationId]?.messages
+        .filter(m => m.sender === Sender.AI)
+        .pop()?.text.toLowerCase() || '';
+
+      const wasJoke = lastAiMessage.includes('chiste');
+
+      let aiResponseText = "¡Me alegro de que te haya gustado! 😄";
+      if (wasJoke && Math.random() > 0.5) {
+        aiResponseText = "¡Genial! ¿Te cuento otro?";
+      }
+
+      const aiMessage: ChatMessage = { id: (Date.now() + 1).toString(), sender: Sender.AI, text: aiResponseText };
+
+      setConversations(prev => {
+        const updatedConvo = { ...prev[activeConversationId] };
+        updatedConvo.messages.push(userMessage, aiMessage);
+        updatedConvo.lastModified = Date.now();
+        return { ...prev, [activeConversationId]: updatedConvo };
+      });
+      return; // Evita que el mensaje de risa se envíe a la IA
+    }
+    // --- FIN PASO 3 ---
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(), sender: Sender.User, text,
@@ -171,8 +206,70 @@ const App: React.FC = () => {
           await processStream(result.stream);
         } else {
           if (!chat) throw new Error("Chat de Gemini no inicializado.");
-          const result = await chat.sendMessageStream(text);
-          await processStream(result.stream);
+
+          let promptToSend = text;
+          // The proactive response logic is now implicitly handled by the AI's tool-calling ability.
+          // We can remove the explicit regex checks for "crea una web", etc.,
+          // as the model itself will decide when to be proactive if prompted correctly.
+          // The system instructions for the personalities can be enhanced to guide this behavior.
+
+          let result = await chat.sendMessageStream(promptToSend);
+
+          // Tool-calling loop
+          for await (const chunk of result.stream) {
+            const functionCalls = chunk.functionCalls();
+            if (functionCalls && functionCalls.length > 0) {
+              // Set searching indicator
+              setIsSearching(true);
+
+              const searchPromises = functionCalls.map(async (call) => {
+                if (call.name === 'internetSearch') {
+                  const query = call.args.query;
+                  try {
+                    const searchResults = await performSearch(query as string);
+                    // We only need a summary for the AI, not the full content
+                    const summarizedResults = searchResults.slice(0, 5).map(r => ({
+                      title: r.title,
+                      link: r.link,
+                      snippet: r.snippet,
+                    }));
+
+                    return {
+                      functionResponse: {
+                        name: 'internetSearch',
+                        response: { results: summarizedResults },
+                      },
+                    };
+                  } catch (e) {
+                    console.error("Error during search:", e);
+                    return {
+                      functionResponse: {
+                        name: 'internetSearch',
+                        response: { error: "La búsqueda falló." },
+                      },
+                    };
+                  }
+                }
+              });
+
+              const responses = await Promise.all(searchPromises);
+
+              // Send search results back to the model
+              const searchResultStream = await chat.sendMessageStream(responses.filter(Boolean) as any);
+
+              // Stop the searching indicator
+              setIsSearching(false);
+
+              // Process the final response stream from the model
+              await processStream(searchResultStream.stream);
+
+            } else {
+              // If no function call, process the text stream directly
+              await processStream(result.stream);
+            }
+            // Break after the first chunk since we've handled it
+            break;
+          }
         }
       }
     } catch (e) {
@@ -257,7 +354,7 @@ const App: React.FC = () => {
   const canRetry = !isLoading && activeConversation?.personality === 'flash' && activeConversation?.messages.some(m => m.sender === Sender.User);
 
   return (
-    <div className="flex h-screen bg-zinc-900 text-white font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#121212] text-white font-sans overflow-hidden">
       <Sidebar 
         conversations={Object.values(conversations)}
         activeConversationId={activeConversationId}
@@ -280,9 +377,11 @@ const App: React.FC = () => {
           onToggleFullscreen={handleToggleFullscreen}
           isFullscreen={isFullscreen}
           onToggleSidebar={handleToggleSidebar}
+          isSearchEnabled={isSearchEnabled}
+          onToggleSearch={() => setIsSearchEnabled(prev => !prev)}
         />
         {error && <div className="bg-red-900/50 border-t border-b border-red-600/30 text-red-100 p-3 text-center text-sm z-20"><strong>Error:</strong> {error}</div>}
-        <MessageList messages={activeConversation?.messages || []} isLoading={isLoading} />
+        <MessageList messages={activeConversation?.messages || []} isLoading={isLoading || isSearching} isSearching={isSearching} />
         <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} personalityType={activeConversation?.personality ? PERSONALITIES[activeConversation.personality].type : 'chat'} />
         {toast && <div className="absolute bottom-24 right-5 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg z-50 transition-transform transform-gpu animate-fade-in-out">{toast}</div>}
       </div>

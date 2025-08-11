@@ -1,4 +1,24 @@
-import { GoogleGenerativeAI, ChatSession, GenerativeModel } from "@google/generative-ai";
+import { GoogleGenerativeAI, ChatSession, GenerativeModel, FunctionDeclarationsTool } from "@google/generative-ai";
+
+// Definición de la herramienta de búsqueda en internet
+export const internetSearchTool: FunctionDeclarationsTool = {
+  functionDeclarations: [
+    {
+      name: "internetSearch",
+      description: "Busca en internet información en tiempo real sobre un tema específico. Úsalo para eventos recientes, precios, resultados deportivos, etc.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          query: {
+            type: "STRING",
+            description: "La consulta de búsqueda precisa para obtener la información."
+          }
+        },
+        required: ["query"]
+      }
+    }
+  ]
+};
 
 let genAI: GoogleGenerativeAI | undefined;
 
@@ -13,11 +33,12 @@ function getGoogleAI() {
     return genAI;
 }
 
-export function startChat(systemInstruction: string, model: string, history?: any[]): ChatSession {
+export function startChat(systemInstruction: string, model: string, history?: any[], tools?: FunctionDeclarationsTool[]): ChatSession {
     const genAI = getGoogleAI();
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({ 
         model: model,
-        systemInstruction: systemInstruction
+        systemInstruction: systemInstruction,
+        tools: tools
     });
     
     // Convertir el historial al formato correcto si existe
