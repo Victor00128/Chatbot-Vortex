@@ -70,7 +70,7 @@ const Header: React.FC<HeaderProps> = ({
             onClick={onToggleSearch}
             disabled={isLoading}
             className={`p-2 rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isSearchEnabled ? 'bg-blue-600/50 text-blue-200 hover:bg-blue-600/80' : 'text-gray-400 hover:bg-zinc-700'
+              isSearchEnabled ? 'bg-blue-500 text-white hover:bg-blue-600' : 'text-gray-400 hover:bg-zinc-700'
             }`}
             aria-label={isSearchEnabled ? "Desactivar búsqueda en internet" : "Activar búsqueda en internet"}
             title={isSearchEnabled ? "Desactivar búsqueda en internet" : "Activar búsqueda en internet"}

@@ -39,7 +39,7 @@ const getIconForFileType = (fileType: string): React.ReactElement => {
         return <ZipIcon />;
     }
     if (fileType.includes('msword') || fileType.includes('officedocument.wordprocessingml.document')) {
-        return <FileTextIcon className="h-6 w-6 text-blue-400" />;
+        return <FileTextIcon className="h-6 w-6 text-blue-500" />;
     }
     return <FileTextIcon />;
 };
@@ -55,12 +55,12 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message }) => {
   
   const bubbleClasses = `rounded-xl px-4 py-2.5 max-w-xl shadow-md flex flex-col ${
     isUser
-      ? 'bg-blue-800 text-white rounded-br-none'
+      ? 'bg-blue-500 text-white rounded-br-none' // Color de acento unificado
       : 'bg-zinc-800 text-gray-100 rounded-bl-none'
   }`;
   
   const speaker = isUser ? 'Tú' : 'Bot';
-  const speakerColor = isUser ? 'text-blue-300' : 'text-gray-300';
+  const speakerColor = isUser ? 'text-blue-200' : 'text-gray-300';
 
   return (
     <div className={containerClasses}>

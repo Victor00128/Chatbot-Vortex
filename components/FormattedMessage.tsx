@@ -74,7 +74,7 @@ const markdownComponents: Components = {
     ul: ({node, ...props}) => <ul className="list-disc list-outside my-2 pl-5" {...props} />,
     ol: ({node, ...props}) => <ol className="list-decimal list-outside my-2 pl-5" {...props} />,
     blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-zinc-500 pl-4 italic my-2 text-zinc-400" {...props} />,
-    a: ({node, ...props}) => <a className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+    a: ({node, ...props}) => <a className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
     table: ({node, ...props}) => <div className="overflow-x-auto my-2"><table className="table-auto w-full" {...props} /></div>,
     th: ({node, ...props}) => <th className="px-4 py-2 border border-zinc-600 bg-zinc-800" {...props} />,
     td: ({node, ...props}) => <td className="px-4 py-2 border border-zinc-600" {...props} />,

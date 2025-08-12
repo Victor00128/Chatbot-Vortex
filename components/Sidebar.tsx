@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onNewConversation}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-blue-700 text-white font-semibold rounded-lg px-4 py-2 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors duration-200 disabled:bg-zinc-700 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white font-semibold rounded-lg px-4 py-2 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors duration-200 disabled:bg-zinc-700 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

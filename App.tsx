@@ -108,7 +108,14 @@ const App: React.FC = () => {
     if ((!text && !file) || !activeConversationId) return;
 
     // --- PASO 3: IA CONVERSACIONAL (RISAS) ---
-    const laughExpressions = [/^j[aeiou]+j[aeiou]+j?[aeiou]*$/i, /^x[d]+$/i, /^lo+l$/i, /😂/, /🤣/];
+    const laughExpressions = [
+      /^j(a|i)+j(a|i)+j(a|i)*$/i, // jajaja, jijiji, etc.
+      /^j+$/i, // jjjjj
+      /^x[d]+$/i, // xD, xDD, etc.
+      /^lo+l$/i, // lol, lool, etc.
+      /😂/,
+      /🤣/
+    ];
     const isLaugh = laughExpressions.some(regex => regex.test(text.trim()));
 
     if (isLaugh && !file) {
@@ -120,9 +127,20 @@ const App: React.FC = () => {
 
       const wasJoke = lastAiMessage.includes('chiste');
 
-      let aiResponseText = "¡Me alegro de que te haya gustado! 😄";
+      const baseResponses = [
+        "¡Me alegro de que te haya gustado! 😄",
+        "¡Genial, sabía que te haría reír!",
+        "¡Perfecto! ¿En qué más puedo ayudarte?",
+      ];
+
+      const jokeFollowUpResponse = "¡Qué bueno que te gustó! ¿Te cuento otro?";
+
+      let aiResponseText: string;
+
       if (wasJoke && Math.random() > 0.5) {
-        aiResponseText = "¡Genial! ¿Te cuento otro?";
+        aiResponseText = jokeFollowUpResponse;
+      } else {
+        aiResponseText = baseResponses[Math.floor(Math.random() * baseResponses.length)];
       }
 
       const aiMessage: ChatMessage = { id: (Date.now() + 1).toString(), sender: Sender.AI, text: aiResponseText };
@@ -213,13 +231,42 @@ const App: React.FC = () => {
           // as the model itself will decide when to be proactive if prompted correctly.
           // The system instructions for the personalities can be enhanced to guide this behavior.
 
-          let result = await chat.sendMessageStream(promptToSend);
+          const result = await chat.sendMessageStream(promptToSend);
 
-          // Tool-calling loop
+          let aiResponseText = '';
+          let lastUpdateTime = 0;
+          const UPDATE_INTERVAL_MS = 100;
+
+          const updateDisplay = (text: string) => {
+            setConversations(prev => {
+                const activeConvo = prev[activeConversationId!];
+                if (!activeConvo) return prev;
+
+                const lastMessage = activeConvo.messages[activeConvo.messages.length - 1];
+                if (!lastMessage || lastMessage.id !== aiMessageId) {
+                    return prev;
+                }
+
+                if (lastMessage.text === text) {
+                    return prev;
+                }
+
+                const updatedMessages = activeConvo.messages.map(msg =>
+                    msg.id === aiMessageId ? { ...msg, text: text } : msg
+                );
+
+                return {
+                    ...prev,
+                    [activeConversationId!]: { ...activeConvo, messages: updatedMessages, lastModified: Date.now() }
+                };
+            });
+          };
+
           for await (const chunk of result.stream) {
             const functionCalls = chunk.functionCalls();
             if (functionCalls && functionCalls.length > 0) {
-              // Set searching indicator
+              // Finalize any text that was streamed before the function call
+              updateDisplay(aiResponseText);
               setIsSearching(true);
 
               const searchPromises = functionCalls.map(async (call) => {
@@ -227,49 +274,47 @@ const App: React.FC = () => {
                   const query = call.args.query;
                   try {
                     const searchResults = await performSearch(query as string);
-                    // We only need a summary for the AI, not the full content
-                    const summarizedResults = searchResults.slice(0, 5).map(r => ({
-                      title: r.title,
-                      link: r.link,
-                      snippet: r.snippet,
-                    }));
+                    const searchResponseString = searchResults.slice(0, 5).map(r =>
+                      `Title: ${r.title}\nSnippet: ${r.snippet}\nSource: ${r.link}`
+                    ).join('\n\n---\n\n');
 
-                    return {
-                      functionResponse: {
-                        name: 'internetSearch',
-                        response: { results: summarizedResults },
-                      },
-                    };
+                    return { functionResponse: { name: 'internetSearch', response: { results: searchResponseString } } };
                   } catch (e) {
                     console.error("Error during search:", e);
-                    return {
-                      functionResponse: {
-                        name: 'internetSearch',
-                        response: { error: "La búsqueda falló." },
-                      },
-                    };
+                    return { functionResponse: { name: 'internetSearch', response: { error: "La búsqueda falló." } } };
                   }
                 }
+                return null;
               });
 
               const responses = await Promise.all(searchPromises);
+              const validResponses = responses.filter(Boolean);
 
-              // Send search results back to the model
-              const searchResultStream = await chat.sendMessageStream(responses.filter(Boolean) as any);
+              if (validResponses.length > 0) {
+                const searchResultStream = await chat.sendMessageStream(validResponses as any);
+                setIsSearching(false);
+                // The new stream contains the final answer. Let processStream handle it.
+                // It will overwrite the previous text, which is what we want.
+                await processStream(searchResultStream.stream);
+              } else {
+                 setIsSearching(false);
+              }
 
-              // Stop the searching indicator
-              setIsSearching(false);
-
-              // Process the final response stream from the model
-              await processStream(searchResultStream.stream);
-
-            } else {
-              // If no function call, process the text stream directly
-              await processStream(result.stream);
+              // The message turn is complete after a function call.
+              return;
             }
-            // Break after the first chunk since we've handled it
-            break;
+
+            // If we are here, it's a regular text chunk.
+            aiResponseText += chunk.text();
+            const now = Date.now();
+            if (now - lastUpdateTime > UPDATE_INTERVAL_MS) {
+              updateDisplay(aiResponseText);
+              lastUpdateTime = now;
+            }
           }
+
+          // If the loop completes without any function calls, do a final update.
+          updateDisplay(aiResponseText);
         }
       }
     } catch (e) {
