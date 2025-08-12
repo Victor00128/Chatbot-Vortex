@@ -351,7 +351,6 @@ const App: React.FC = () => {
                   if (call.name === 'internetSearch') {
                     const query = call.args.query;
                     const searchResults = await performSearch(query as string);
-                    // REQUIREMENT CHANGE: Return array of objects, not a string.
                     const response = searchResults.map(r => ({
                       title: r.title,
                       snippet: r.snippet,
@@ -359,22 +358,23 @@ const App: React.FC = () => {
                     }));
                     return { functionResponse: { name: 'internetSearch', response: { results: response } } };
                   } else if (call.name === 'getCurrentTime') {
-                    // REQUIREMENT: Implement realTimeClockTool
                     const now = new Date();
                     const formattedTime = now.toLocaleString('es-ES', {
                       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                       hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
                     });
                     return { functionResponse: { name: 'getCurrentTime', response: { currentTime: formattedTime } } };
+                  } else {
+                    // BUG FIX: Handle unknown tools to prevent response count mismatch.
+                    return { functionResponse: { name: call.name, response: { error: `La herramienta '${call.name}' no es conocida o no está implementada.` } } };
                   }
                 } catch (e) {
                   console.error(`Error during tool call ${call.name}:`, e);
-                  return { functionResponse: { name: call.name, response: { error: "La herramienta falló." } } };
+                  return { functionResponse: { name: call.name, response: { error: "La herramienta falló durante la ejecución." } } };
                 }
-                return null;
               });
 
-              const responses = (await Promise.all(toolPromises)).filter(Boolean);
+              const responses = await Promise.all(toolPromises);
 
               setIsSearching(false);
               if (responses.length > 0) {
