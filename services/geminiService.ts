@@ -20,6 +20,21 @@ export const internetSearchTool: FunctionDeclarationsTool = {
   ]
 };
 
+// Definición de la herramienta de reloj en tiempo real
+export const realTimeClockTool: FunctionDeclarationsTool = {
+  functionDeclarations: [
+    {
+      name: "getCurrentTime",
+      description: "Obtiene la fecha y hora actual. Úsala para responder cualquier pregunta sobre la fecha, el día de la semana, la hora actual o cualquier consulta temporal.",
+      parameters: {
+        type: "OBJECT",
+        properties: {},
+        required: []
+      }
+    }
+  ]
+};
+
 let genAI: GoogleGenerativeAI | undefined;
 
 function getGoogleAI() {

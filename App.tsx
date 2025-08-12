@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { ChatSession } from '@google/generative-ai';
 import 'katex/dist/katex.min.css';
 import { Sender, ChatMessage, AIPersonality, PERSONALITIES, Conversation } from './types';
-import { startChat, internetSearchTool } from './services/geminiService';
+import { startChat, internetSearchTool, realTimeClockTool } from './services/geminiService';
 import { analyzeFileWithBackend } from './services/backendService';
 import { performSearch } from './services/searchService';
 import { getOpenAIStream } from './services/openaiService';
@@ -83,7 +83,12 @@ const App: React.FC = () => {
         .filter(m => m.id !== 'initial-message' && !m.fileInfo)
         .map(msg => ({ role: msg.sender === Sender.User ? 'user' : 'model', parts: [{ text: msg.text }] }));
 
-      const tools: any[] = isSearchEnabled ? [internetSearchTool] : [];
+      const tools: any[] = [];
+      if (isSearchEnabled) {
+        tools.push(internetSearchTool);
+      }
+      tools.push(realTimeClockTool); // El reloj siempre está disponible
+
       const chatSession = startChat(config.systemInstruction, config.model, apiHistory, tools);
       setChat(chatSession);
     } catch (e) {
@@ -177,47 +182,120 @@ const App: React.FC = () => {
       const processStream = async (stream: AsyncGenerator<any>) => {
         let aiResponseText = '';
         let lastUpdateTime = 0;
-        const UPDATE_INTERVAL_MS = 100; // Update UI every 100ms
+        const UPDATE_INTERVAL_MS = 100;
 
         const updateDisplay = (text: string) => {
             setConversations(prev => {
                 const activeConvo = prev[activeConversationId!];
                 if (!activeConvo) return prev;
-
                 const lastMessage = activeConvo.messages[activeConvo.messages.length - 1];
-                if (!lastMessage || lastMessage.id !== aiMessageId || lastMessage.text === text) {
-                    return prev; // No update needed if message not found or text is same
-                }
-
-                const updatedMessages = activeConvo.messages.map(msg =>
-                    msg.id === aiMessageId ? { ...msg, text: text } : msg
-                );
-
-                return {
-                    ...prev,
-                    [activeConversationId!]: { ...activeConvo, messages: updatedMessages, lastModified: Date.now() }
-                };
+                if (!lastMessage || lastMessage.id !== aiMessageId || lastMessage.text === text) return prev;
+                const updatedMessages = activeConvo.messages.map(msg => msg.id === aiMessageId ? { ...msg, text } : msg);
+                return { ...prev, [activeConversationId!]: { ...activeConvo, messages: updatedMessages, lastModified: Date.now() } };
             });
         };
 
         for await (const chunk of stream) {
-            aiResponseText += chunk.text();
-            const now = Date.now();
-            if (now - lastUpdateTime > UPDATE_INTERVAL_MS) {
-                updateDisplay(aiResponseText);
-                lastUpdateTime = now;
+            let chunkText = '';
+            // Adapt to both Gemini and OpenAI stream formats
+            if (typeof chunk.text === 'function') {
+                chunkText = chunk.text(); // Gemini format
+            } else if (chunk.type === 'text') {
+                chunkText = chunk.value; // New OpenAI format
+            }
+
+            if (chunkText) {
+                aiResponseText += chunkText;
+                const now = Date.now();
+                if (now - lastUpdateTime > UPDATE_INTERVAL_MS) {
+                    updateDisplay(aiResponseText);
+                    lastUpdateTime = now;
+                }
             }
         }
-        // Final update to guarantee the full response is displayed
-        updateDisplay(aiResponseText);
+        updateDisplay(aiResponseText); // Final update
       };
       
       const config = PERSONALITIES[updatedConvo.personality];
 
       if (config.provider === 'openai') {
-        const history = updatedConvo.messages.slice(0, -2);
-        const stream = getOpenAIStream(config, history, userMessage);
-        await processStream(stream);
+        const history = updatedConvo.messages.slice(0, -1); // Include user message
+
+        // 1. Definir herramientas para OpenAI
+        const tools = [
+          {
+            type: 'function',
+            function: {
+              name: 'internetSearch',
+              description: 'Busca en internet información en tiempo real. Úsalo para eventos recientes, precios, etc.',
+              parameters: {
+                type: 'object',
+                properties: { query: { type: 'string', description: 'La consulta de búsqueda.' } },
+                required: ['query'],
+              },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'getCurrentTime',
+              description: 'Obtiene la fecha y hora actual.',
+              parameters: { type: 'object', properties: {} },
+            },
+          },
+        ];
+
+        // 2. Llamada inicial a la API
+        const stream = getOpenAIStream(config, history.slice(0, -1), userMessage, tools);
+
+        let aiResponseText = '';
+        let toolCalls: any[] = [];
+
+        // 3. Procesar el stream de respuesta
+        for await (const chunk of stream) {
+          if (chunk.type === 'text') {
+            aiResponseText += chunk.value;
+            updateDisplay(aiResponseText); // Reutilizamos la función de actualización
+          } else if (chunk.type === 'tool_call') {
+            toolCalls = chunk.value;
+          }
+        }
+        updateDisplay(aiResponseText); // Final update for any remaining text
+
+        // 4. Si hay llamadas a herramientas, ejecutarlas
+        if (toolCalls.length > 0) {
+          setIsSearching(true);
+          const toolResults = await Promise.all(toolCalls.map(async (call) => {
+            let content = '';
+            try {
+              const args = JSON.parse(call.function.arguments);
+              if (call.function.name === 'internetSearch') {
+                const searchResults = await performSearch(args.query);
+                content = JSON.stringify(searchResults.map(r => ({ title: r.title, snippet: r.snippet, source: r.link })));
+              } else if (call.function.name === 'getCurrentTime') {
+                const now = new Date();
+                content = now.toLocaleString('es-ES', {
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                });
+              }
+            } catch (e) {
+              console.error("Error executing OpenAI tool:", e);
+              content = JSON.stringify({ error: "La herramienta falló" });
+            }
+            return {
+              role: 'tool',
+              tool_call_id: call.id,
+              content,
+            };
+          }));
+
+          // 5. Enviar resultados de vuelta a la API
+          const finalStream = getOpenAIStream(config, history, userMessage, tools, toolResults);
+          setIsSearching(false);
+          await processStream(finalStream); // processStream adaptado para el nuevo output
+        }
+
       } else {
         if (file) {
           const result = await analyzeFileWithBackend(text, file, config.systemInstruction);
@@ -265,43 +343,46 @@ const App: React.FC = () => {
           for await (const chunk of result.stream) {
             const functionCalls = chunk.functionCalls();
             if (functionCalls && functionCalls.length > 0) {
-              // Finalize any text that was streamed before the function call
-              updateDisplay(aiResponseText);
+              updateDisplay(aiResponseText); // Finalize previous text
               setIsSearching(true);
 
-              const searchPromises = functionCalls.map(async (call) => {
-                if (call.name === 'internetSearch') {
-                  const query = call.args.query;
-                  try {
+              const toolPromises = functionCalls.map(async (call) => {
+                try {
+                  if (call.name === 'internetSearch') {
+                    const query = call.args.query;
                     const searchResults = await performSearch(query as string);
-                    const searchResponseString = searchResults.slice(0, 5).map(r =>
-                      `Title: ${r.title}\nSnippet: ${r.snippet}\nSource: ${r.link}`
-                    ).join('\n\n---\n\n');
-
-                    return { functionResponse: { name: 'internetSearch', response: { results: searchResponseString } } };
-                  } catch (e) {
-                    console.error("Error during search:", e);
-                    return { functionResponse: { name: 'internetSearch', response: { error: "La búsqueda falló." } } };
+                    // REQUIREMENT CHANGE: Return array of objects, not a string.
+                    const response = searchResults.map(r => ({
+                      title: r.title,
+                      snippet: r.snippet,
+                      source: r.link,
+                    }));
+                    return { functionResponse: { name: 'internetSearch', response: { results: response } } };
+                  } else if (call.name === 'getCurrentTime') {
+                    // REQUIREMENT: Implement realTimeClockTool
+                    const now = new Date();
+                    const formattedTime = now.toLocaleString('es-ES', {
+                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                    });
+                    return { functionResponse: { name: 'getCurrentTime', response: { currentTime: formattedTime } } };
                   }
+                } catch (e) {
+                  console.error(`Error during tool call ${call.name}:`, e);
+                  return { functionResponse: { name: call.name, response: { error: "La herramienta falló." } } };
                 }
                 return null;
               });
 
-              const responses = await Promise.all(searchPromises);
-              const validResponses = responses.filter(Boolean);
+              const responses = (await Promise.all(toolPromises)).filter(Boolean);
 
-              if (validResponses.length > 0) {
-                const searchResultStream = await chat.sendMessageStream(validResponses as any);
-                setIsSearching(false);
-                // The new stream contains the final answer. Let processStream handle it.
-                // It will overwrite the previous text, which is what we want.
-                await processStream(searchResultStream.stream);
-              } else {
-                 setIsSearching(false);
+              setIsSearching(false);
+              if (responses.length > 0) {
+                const toolResultStream = await chat.sendMessageStream(responses as any);
+                await processStream(toolResultStream.stream);
               }
 
-              // The message turn is complete after a function call.
-              return;
+              return; // Tool call turn is complete
             }
 
             // If we are here, it's a regular text chunk.
