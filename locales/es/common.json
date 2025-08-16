@@ -1,0 +1,184 @@
+{
+  "app": {
+    "title": "Vortex-IA - Chatbot Inteligente",
+    "description": "Chatbot con doble personalidad IA, análisis multimodal y respuestas en tiempo real"
+  },
+  "sidebar": {
+    "newChat": "Nuevo Chat",
+    "history": "Historial",
+    "conversations": "conversaciones",
+    "noConversations": "No hay conversaciones aún.",
+    "startFirstConversation": "¡Inicia tu primera conversación!",
+    "generatingSummary": "Generando resumen..."
+  },
+  "chatInput": {
+    "placeholder": "Escribe tu mensaje...",
+    "placeholderWithFile": "Pregunta sobre el archivo adjunto...",
+    "attachFile": "Adjuntar archivo",
+    "sendMessage": "Enviar mensaje",
+    "removeAttachment": "Eliminar archivo adjunto",
+    "attached": "Adjunto: {{fileName}}"
+  },
+  "messages": {
+    "bot": "Bot",
+    "typing": "Escribiendo...",
+    "regenerate": "Regenerar respuesta",
+    "edit": "Editar mensaje",
+    "delete": "Eliminar mensaje",
+    "copy": "Copiar mensaje"
+  },
+  "personalities": {
+    "flash": {
+      "name": "Modelo Flash",
+      "description": "Respuestas rápidas y versátiles con Gemini",
+      "welcomeMessage": "¡Hola! Soy Vortex-IA. Pregúntame cualquier cosa, desde física cuántica hasta literatura del Siglo de Oro."
+    },
+    "developer": {
+      "name": "Modelo Desarrollador",
+      "description": "Especialista en programación y desarrollo con OpenAI",
+      "welcomeMessage": "Soy el Modelo Desarrollador (OpenAI). ¿Listo para construir algo increíble?"
+    }
+  },
+  "menu": {
+    "rename": "Renombrar",
+    "delete": "Eliminar",
+    "download": "Descargar",
+    "changePersonality": "Cambiar personalidad",
+    "toggleSearch": "Alternar búsqueda",
+    "toggleFullscreen": "Pantalla completa",
+    "settings": "Configuración"
+  },
+  "states": {
+    "loading": "Cargando...",
+    "searching": "Buscando...",
+    "processing": "Procesando...",
+    "generating": "Generando...",
+    "analyzing": "Analizando archivo...",
+    "uploading": "Subiendo archivo...",
+    "connecting": "Conectando...",
+    "disconnected": "Desconectado",
+    "reconnecting": "Reconectando..."
+  },
+  "tools": {
+    "internetSearch": "Búsqueda en Internet",
+    "getCurrentTime": "Obtener hora actual",
+    "searchingFor": "Buscando: {{query}}",
+    "searchResults": "Resultados de búsqueda",
+    "noResultsFound": "No se encontraron resultados"
+  },
+  "errors": {
+    "general": "Ha ocurrido un error inesperado",
+    "networkError": "Error de conexión. Verifica tu conexión a internet.",
+    "apiKeyMissing": "Clave de API no configurada",
+    "apiKeyInvalid": "Clave de API inválida",
+    "quotaExceeded": "Cuota de API excedida",
+    "fileUploadError": "Error al subir el archivo",
+    "fileTooBig": "El archivo es demasiado grande",
+    "fileTypeNotSupported": "Tipo de archivo no soportado",
+    "conversationNotFound": "Conversación no encontrada",
+    "messageTooLong": "El mensaje es demasiado largo",
+    "cannotDeleteLastConversation": "No se puede eliminar la última conversación",
+    "summaryGenerationFailed": "Error al generar resumen de conversación"
+  },
+  "success": {
+    "messageRegenerating": "Regenerando respuesta...",
+    "messageCopied": "Mensaje copiado al portapapeles",
+    "conversationRenamed": "Conversación renombrada",
+    "conversationDeleted": "Conversación eliminada",
+    "conversationDownloaded": "Conversación descargada",
+    "fileUploaded": "Archivo subido correctamente",
+    "settingsSaved": "Configuración guardada",
+    "newConversationCreated": "Nueva conversación iniciada",
+    "personalityChanged": "Personalidad cambiada",
+    "summaryGenerated": "Resumen de conversación actualizado",
+    "searchEnabled": "Búsqueda habilitada",
+    "searchDisabled": "Búsqueda deshabilitada",
+    "fullscreenEnabled": "Modo pantalla completa activado",
+    "fullscreenDisabled": "Modo pantalla completa desactivado"
+  },
+  "actions": {
+    "send": "Enviar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "rename": "Renombrar",
+    "download": "Descargar",
+    "upload": "Subir",
+    "copy": "Copiar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "retry": "Reintentar",
+    "refresh": "Actualizar"
+  },
+  "confirmations": {
+    "deleteConversation": "¿Estás seguro de que quieres eliminar esta conversación?",
+    "deleteMessage": "¿Estás seguro de que quieres eliminar este mensaje?",
+    "clearAllConversations": "¿Estás seguro de que quieres eliminar todas las conversaciones?",
+    "resetSettings": "¿Estás seguro de que quieres restablecer la configuración?"
+  },
+  "file": {
+    "selectFile": "Seleccionar archivo",
+    "dropFileHere": "Arrastra el archivo aquí",
+    "supportedFormats": "Formatos soportados: {{formats}}",
+    "maxFileSize": "Tamaño máximo: {{size}}",
+    "processing": "Procesando archivo...",
+    "analyzing": "Analizando contenido...",
+    "ready": "Archivo listo para analizar"
+  },
+  "accessibility": {
+    "openSidebar": "Abrir panel lateral",
+    "closeSidebar": "Cerrar panel lateral",
+    "scrollToBottom": "Ir al final de la conversación",
+    "focusInput": "Enfocar campo de texto",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "selectPersonality": "Seleccionar personalidad de IA"
+  },
+  "time": {
+    "now": "ahora",
+    "minuteAgo": "hace un minuto",
+    "minutesAgo": "hace {{count}} minutos",
+    "hourAgo": "hace una hora",
+    "hoursAgo": "hace {{count}} horas",
+    "dayAgo": "hace un día",
+    "daysAgo": "hace {{count}} días",
+    "weekAgo": "hace una semana",
+    "weeksAgo": "hace {{count}} semanas",
+    "monthAgo": "hace un mes",
+    "monthsAgo": "hace {{count}} meses",
+    "yearAgo": "hace un año",
+    "yearsAgo": "hace {{count}} años"
+  },
+  "search": {
+    "placeholder": "Buscar en conversaciones...",
+    "noResults": "No se encontraron resultados para '{{query}}'",
+    "resultsFound": "{{count}} resultado(s) encontrado(s)",
+    "searchInProgress": "Buscando...",
+    "clearSearch": "Limpiar búsqueda"
+  },
+  "settings": {
+    "language": "Idioma",
+    "theme": "Tema",
+    "notifications": "Notificaciones",
+    "privacy": "Privacidad",
+    "about": "Acerca de",
+    "version": "Versión",
+    "clearData": "Limpiar datos",
+    "exportData": "Exportar datos",
+    "importData": "Importar datos"
+  },
+  "features": {
+    "dualPersonality": "Doble Personalidad de IA",
+    "multimodalAnalysis": "Análisis Multimodal",
+    "realTimeResponses": "Respuestas en Tiempo Real",
+    "conversationMemory": "Memoria de Conversación",
+    "internetSearch": "Búsqueda en Internet",
+    "fileAnalysis": "Análisis de Archivos",
+    "codeGeneration": "Generación de Código",
+    "languageSupport": "Soporte Multiidioma"
+  }
+}
