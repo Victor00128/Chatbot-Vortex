@@ -3,6 +3,7 @@ import { Sender, ChatMessage as Message } from "../types";
 import ChatMessage from "./ChatMessage";
 import TypingIndicator from "./TypingIndicator";
 import ToolIndicator from "./ToolIndicator";
+import ImageContextIndicator from "./ImageContextIndicator";
 import VirtualizedMessageList from "./VirtualizedMessageList";
 import { useChatStore } from "../store/chatStore";
 import "../styles/animations.css";
@@ -16,6 +17,7 @@ const MessageList: React.FC = () => {
     isSearching,
     currentTool,
     toolQuery,
+    usingPreviousImage,
   } = useChatStore();
 
   const activeConversation = activeConversationId
@@ -74,6 +76,7 @@ const MessageList: React.FC = () => {
           />
         </div>
       ))}
+      <ImageContextIndicator />
       {showIndicator && (
         <div className="flex w-full my-2 justify-start animate-message-in">
           <div className="rounded-xl px-4 py-2.5 max-w-xl shadow-md bg-zinc-800 text-gray-100 rounded-bl-none transition-all">

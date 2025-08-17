@@ -16,6 +16,7 @@ import {
   getEnrichedContext,
 } from "../services/summaryService";
 import { supabase, getRecentHistory } from "../services/supabaseClient";
+import { ChatValidator, debugChat } from "../services/debugService";
 
 interface ChatState {
   conversations: Record<string, Conversation>;
@@ -34,6 +35,7 @@ interface ChatState {
   toolQuery: string | null;
   toast: { message: string; type: "success" | "error" | "info" } | null;
   isGeneratingSummary: boolean;
+  usingPreviousImage: boolean;
 
   // actions
   setActiveConversationId: (id: string | null) => void;
@@ -45,6 +47,7 @@ interface ChatState {
   setSearching: (searching: boolean) => void;
   showToast: (message: string, type?: "success" | "error" | "info") => void;
   hideToast: () => void;
+  setUsingPreviousImage: (using: boolean) => void;
   addConversation: (conversation: Conversation) => void;
   updateConversation: (id: string, updates: Partial<Conversation>) => void;
   deleteConversation: (id: string) => void;
@@ -82,6 +85,7 @@ interface ChatState {
   ) => Promise<void>;
   getRecentHistory: (conversationId: string, limit?: number) => Promise<any[]>;
   getEnrichedContextForConversation: (conversationId: string) => ChatMessage[];
+  getLastImageFromConversation: (conversationId: string) => ChatMessage | null;
   backgroundSummaryGeneration: (conversationId: string) => void;
 }
 
@@ -104,6 +108,7 @@ export const useChatStore = create<ChatState>()(
       toolQuery: null,
       toast: null,
       isGeneratingSummary: false,
+      usingPreviousImage: false,
 
       setActiveConversationId: (id) => set({ activeConversationId: id }),
       setError: (error) => set({ error }),
@@ -114,6 +119,8 @@ export const useChatStore = create<ChatState>()(
       setSearching: (searching) => set({ isSearching: searching }),
       showToast: (message, type = "info") => set({ toast: { message, type } }),
       hideToast: () => set({ toast: null }),
+      setUsingPreviousImage: (using: boolean) =>
+        set({ usingPreviousImage: using }),
 
       addConversation: (conversation) =>
         set((state) => ({
@@ -356,6 +363,11 @@ export const useChatStore = create<ChatState>()(
         const state = get();
         if ((!text && !file) || !state.activeConversationId) return;
 
+        debugChat.log("Starting sendMessage", {
+          text: text?.substring(0, 50),
+          hasFile: !!file,
+        });
+
         // handle laughs
         const laughExpressions = [
           /^j(a|i)+j(a|i)+j(a|i)*$/i,
@@ -446,9 +458,28 @@ export const useChatStore = create<ChatState>()(
         const aiMessage: ChatMessage = {
           id: aiMessageId,
           sender: Sender.AI,
-          text: "",
+          text: "...",
         };
         get().addMessage(state.activeConversationId, aiMessage);
+
+        // validate conversation doesn't have role conflicts
+        const currentConversation =
+          get().conversations[state.activeConversationId];
+        const messages = currentConversation.messages.filter(
+          (m) => m.id !== "initial-message",
+        );
+
+        const validation = ChatValidator.validateRoleSequence(messages);
+        if (!validation.isValid) {
+          debugChat.error(
+            "Role sequence validation failed:",
+            validation.errors,
+          );
+          ChatValidator.logConversationState(
+            state.activeConversationId,
+            messages,
+          );
+        }
 
         // check if needs summary
         const updatedConversation =
@@ -461,21 +492,31 @@ export const useChatStore = create<ChatState>()(
         try {
           const config = PERSONALITIES[conversation.personality];
 
-          // get recent history for memory
-          const recentHistory = await getRecentHistory(
-            state.activeConversationId,
-            3,
-          );
-
-          // build context with history
+          // get recent history for memory (only from current session to avoid conflicts)
           let contextWithMemory = config.systemInstruction;
-          if (recentHistory.length > 0) {
-            const historyContext = recentHistory
-              .map(
-                (h) => `Usuario: ${h.user_prompt}\nAsistente: ${h.ai_response}`,
-              )
-              .join("\n\n");
-            contextWithMemory += `\n\nContexto de conversación reciente:\n${historyContext}`;
+
+          // only use db history if conversation is empty to avoid role conflicts
+          const currentMessages = conversation.messages.filter(
+            (m) => m.id !== "initial-message",
+          );
+          if (currentMessages.length === 0) {
+            try {
+              const recentHistory = await getRecentHistory(
+                state.activeConversationId,
+                2,
+              );
+              if (recentHistory.length > 0) {
+                const historyContext = recentHistory
+                  .map(
+                    (h) =>
+                      `Contexto anterior - Usuario: ${h.user_prompt}\nTu respuesta fue: ${h.ai_response}`,
+                  )
+                  .join("\n");
+                contextWithMemory += `\n\nContexto de sesión anterior:\n${historyContext}`;
+              }
+            } catch (e) {
+              console.log("Error loading history:", e);
+            }
           }
 
           // for long conversations
@@ -494,6 +535,50 @@ export const useChatStore = create<ChatState>()(
             // OpenAI logic
             const enrichedHistory = enrichedContext.slice(0, -2); // exclude user msg and AI placeholder
 
+            // include last image in context if current message references it
+            let finalUserMessage = userMessage;
+            const imageKeywords = [
+              "imagen",
+              "foto",
+              "ejercicio",
+              "mismo",
+              "inciso",
+              "ahora",
+              "también",
+              "anterior",
+              "arriba",
+              "enviaste",
+              "envié",
+              "ves",
+              "mira",
+              "observa",
+              "archivo",
+              "documento",
+              "figura",
+              "gráfico",
+              "dibujo",
+              "problema",
+            ];
+            const hasImageReference = imageKeywords.some((word) =>
+              userMessage.text.toLowerCase().includes(word),
+            );
+
+            if (!userMessage.fileData && hasImageReference) {
+              const lastImage = get().getLastImageFromConversation(
+                state.activeConversationId!,
+              );
+              if (lastImage && lastImage.fileData) {
+                get().setUsingPreviousImage(true);
+                finalUserMessage = {
+                  ...userMessage,
+                  fileData: lastImage.fileData,
+                  fileInfo: lastImage.fileInfo,
+                  imageUrl: lastImage.imageUrl,
+                };
+                debugChat.log("Using previous image for OpenAI context");
+              }
+            }
+
             const tools = [
               {
                 type: "function",
@@ -506,7 +591,7 @@ export const useChatStore = create<ChatState>()(
                     properties: {
                       query: {
                         type: "string",
-                        description: "La consulta de búsqueda.",
+                        description: "La consulta de búsqueda",
                       },
                     },
                     required: ["query"],
@@ -517,8 +602,12 @@ export const useChatStore = create<ChatState>()(
                 type: "function",
                 function: {
                   name: "getCurrentTime",
-                  description: "Obtiene la fecha y hora actual.",
-                  parameters: { type: "object", properties: {} },
+                  description: "Obtiene la fecha y hora actual en formato ISO",
+                  parameters: {
+                    type: "object",
+                    properties: {},
+                    required: [],
+                  },
                 },
               },
             ];
@@ -537,7 +626,7 @@ export const useChatStore = create<ChatState>()(
             const stream = getOpenAIStream(
               enrichedConfig,
               enrichedHistory,
-              userMessage,
+              finalUserMessage,
               tools,
             );
             let aiResponseText = "";
@@ -626,14 +715,54 @@ export const useChatStore = create<ChatState>()(
             }
           } else {
             // Gemini logic
-            if (file) {
+            let fileToProcess = file;
+
+            // if no file but message references image, get last image
+            const imageKeywords = [
+              "imagen",
+              "foto",
+              "ejercicio",
+              "mismo",
+              "inciso",
+              "ahora",
+              "también",
+              "anterior",
+              "arriba",
+              "enviaste",
+              "envié",
+              "ves",
+              "mira",
+              "observa",
+              "archivo",
+              "documento",
+              "figura",
+              "gráfico",
+              "dibujo",
+              "problema",
+            ];
+            const hasImageReference = imageKeywords.some((word) =>
+              text.toLowerCase().includes(word),
+            );
+
+            if (!file && hasImageReference) {
+              const lastImage = get().getLastImageFromConversation(
+                state.activeConversationId!,
+              );
+              if (lastImage && lastImage.fileData) {
+                get().setUsingPreviousImage(true);
+                fileToProcess = lastImage.fileData;
+                debugChat.log("Using previous image for Gemini context");
+              }
+            }
+
+            if (fileToProcess) {
               // dynamic import
               const { analyzeFileWithBackend } = await import(
                 "../services/backendService"
               );
               const result = await analyzeFileWithBackend(
                 text,
-                file,
+                fileToProcess,
                 enrichedSystemInstruction,
               );
               let aiResponseText = "";
@@ -651,13 +780,19 @@ export const useChatStore = create<ChatState>()(
                 "../services/searchService"
               );
 
-              // start gemini chat
-              const apiHistory = enrichedContext
-                .filter((m) => m.id !== "initial-message" && !m.fileInfo)
-                .map((msg) => ({
-                  role: msg.sender === Sender.User ? "user" : "model",
-                  parts: [{ text: msg.text }],
-                }));
+              // start gemini chat - use validator for clean history
+              let apiHistory =
+                ChatValidator.cleanHistoryForAPI(enrichedContext);
+
+              debugChat.log("API History length:", apiHistory.length);
+
+              // final validation before API call
+              if (!debugChat.checkAPICompatibility(apiHistory)) {
+                debugChat.error(
+                  "API compatibility check failed, clearing history",
+                );
+                apiHistory = [];
+              }
 
               const tools: any[] = [];
               if (state.isSearchEnabled) {
@@ -763,9 +898,10 @@ export const useChatStore = create<ChatState>()(
             }
           }
         } catch (e) {
-          get().setError(
-            `Error en envío de mensaje: ${e instanceof Error ? e.message : "Error desconocido"}`,
-          );
+          const errorMsg = ChatValidator.detectAPIError(e);
+          debugChat.error("SendMessage error:", errorMsg, e);
+
+          get().setError(`Error en envío de mensaje: ${errorMsg}`);
           // remove failed messages
           get().deleteMessage(state.activeConversationId, userMessage.id);
           get().deleteMessage(state.activeConversationId, aiMessageId);
@@ -779,7 +915,11 @@ export const useChatStore = create<ChatState>()(
                 const finalAiMessage = finalConversation.messages.find(
                   (m) => m.id === aiMessageId,
                 );
-                if (finalAiMessage && finalAiMessage.text.trim()) {
+                if (
+                  finalAiMessage &&
+                  finalAiMessage.text.trim() &&
+                  finalAiMessage.text !== "..."
+                ) {
                   await get().saveToSupabase(
                     state.activeConversationId,
                     userMessage.text,
@@ -799,6 +939,7 @@ export const useChatStore = create<ChatState>()(
           }
 
           get().setLoading(false);
+          get().setUsingPreviousImage(false);
         }
       },
 
@@ -953,6 +1094,28 @@ export const useChatStore = create<ChatState>()(
       // get recent history for memory
       getRecentHistory: async (conversationId: string, limit = 3) => {
         return await getRecentHistory(conversationId, limit);
+      },
+
+      // get last image from conversation for visual memory
+      getLastImageFromConversation: (conversationId: string) => {
+        const state = get();
+        const conversation = state.conversations[conversationId];
+        if (!conversation) return null;
+
+        // find last message with image/file (within last 10 messages for performance)
+        const recentMessages = conversation.messages.slice(-10);
+        for (let i = recentMessages.length - 1; i >= 0; i--) {
+          const message = recentMessages[i];
+          if (message.fileData && message.fileInfo?.type.startsWith("image/")) {
+            debugChat.log(
+              "Found previous image for context:",
+              message.fileInfo.name,
+            );
+            return message;
+          }
+        }
+        debugChat.log("No previous image found for visual context");
+        return null;
       },
     }),
     {

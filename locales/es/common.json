@@ -25,7 +25,8 @@
     "regenerate": "Regenerar",
     "edit": "Editar",
     "delete": "Borrar",
-    "copy": "Copiar"
+    "copy": "Copiar",
+    "usingImageContext": "📸 Referenciando imagen anterior"
   },
   "personalities": {
     "flash": {
@@ -57,6 +58,7 @@
     "uploading": "Subiendo...",
     "connecting": "Conectando...",
     "loadingContext": "Cargando contexto...",
+    "usingPreviousImage": "Usando imagen anterior...",
     "disconnected": "Sin conexión",
     "reconnecting": "Reconectando..."
   },
