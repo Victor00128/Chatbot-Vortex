@@ -21,7 +21,7 @@ export async function analyzeFileWithBackend(
             systemInstruction: systemInstruction,
         });
 
-        // Use the robust helper function to convert the file
+        // función auxiliar para convertir el archivo
         const filePart = await fileToGenerativePart(file);
         
         const fullPrompt = prompt || "Analiza este archivo y describe su contenido detalladamente.";

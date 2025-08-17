@@ -31,7 +31,7 @@ const MessageList: React.FC = () => {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Don't render the AI's message placeholder while streaming
+  // No transformar el marcador de posición del mensaje de IA mientras transmite
   const visibleMessages = messages.filter(
     (msg) => !(msg.sender === Sender.AI && msg.text === "" && isLoading),
   );
@@ -55,7 +55,7 @@ const MessageList: React.FC = () => {
     return lastUserMessage?.id === messageId;
   };
 
-  // Usar virtualización para conversaciones largas (más de 50 mensajes)
+  // virtualización para conversaciones largas (más de 50 mensajes)
   const shouldUseVirtualization = visibleMessages.length > 50;
 
   if (shouldUseVirtualization) {

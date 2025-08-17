@@ -21,14 +21,14 @@ const App: React.FC = () => {
     hideToast,
   } = useChatStore();
 
-  // Inicializar la aplicación con una conversación si no hay ninguna
+  // crear conversacion inicial
   useEffect(() => {
     if (Object.keys(conversations).length === 0) {
       newConversation();
     }
   }, [conversations, newConversation]);
 
-  // Manejar cambios de pantalla completa
+  // manejar fullscreen
   useEffect(() => {
     const onFullscreenChange = () =>
       setFullscreen(!!document.fullscreenElement);

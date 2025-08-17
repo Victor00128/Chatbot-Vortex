@@ -8,7 +8,7 @@
   --animation-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* ==================== ANIMACIONES DE MENSAJES ==================== */
+/* ==================== ANIMACIONES DE LOS MENSAJES ==================== */
 @keyframes message-slide-in {
   from {
     opacity: 0;
@@ -66,7 +66,7 @@
   animation: sidebar-slide-out var(--animation-speed-normal) var(--animation-ease) forwards;
 }
 
-/* ==================== ANIMACIONES DE BOTONES ==================== */
+/* ==================== ANIMACIONES DE LOS BOTONES ==================== */
 .button-hover-lift {
   transition: all var(--animation-speed-fast) var(--animation-ease);
 }

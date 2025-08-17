@@ -111,7 +111,7 @@ describe("ChatInput", () => {
 
       const input = screen.getByPlaceholderText("Escribe tu mensaje...") as HTMLTextAreaElement;
 
-      // Mock the scrollHeight property
+      //Simulacro de la propiedad scrollHeight
       Object.defineProperty(input, 'scrollHeight', {
         configurable: true,
         value: 100,
@@ -119,7 +119,7 @@ describe("ChatInput", () => {
 
       await user.type(input, "This is a long message that should cause the textarea to resize");
 
-      // The height should be set to match scrollHeight
+      // config de la altura para que coincida con scrollHeight
       expect(input.style.height).toBe("100px");
     });
 
@@ -185,14 +185,14 @@ describe("ChatInput", () => {
     it("should remove file attachment when remove button is clicked", async () => {
       render(<ChatInput />);
 
-      // First, add a file
+      // Agregar Archivo primero
       const fileInput = screen.getByRole("button", { name: /adjuntar archivo/i }).parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
       const file = new File(["test content"], "test.txt", { type: "text/plain" });
 
       await user.upload(fileInput, file);
       expect(screen.getByText(/Adjunto: test\.txt/)).toBeInTheDocument();
 
-      // Then remove it
+      // retirar
       const removeButton = screen.getByRole("button", { name: /eliminar archivo adjunto/i });
       await user.click(removeButton);
 
@@ -294,7 +294,7 @@ describe("ChatInput", () => {
 
       render(<ChatInput />);
 
-      // Focus should be called after a small delay
+      // El enfoque para llamar después de un pequeño retraso
       await waitFor(() => {
         expect(focusMock).toHaveBeenCalled();
       }, { timeout: 200 });
@@ -313,7 +313,7 @@ describe("ChatInput", () => {
 
       await user.upload(fileInput, file);
 
-      // Focus should be called after file selection
+      // foco para llamar después de la selección del archivo
       await waitFor(() => {
         expect(focusMock).toHaveBeenCalled();
       }, { timeout: 200 });
@@ -325,19 +325,19 @@ describe("ChatInput", () => {
 
       render(<ChatInput />);
 
-      // Add file first
+      // Agregar archivo
       const fileInput = screen.getByRole("button", { name: /adjuntar archivo/i }).parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
       const file = new File(["test content"], "test.txt", { type: "text/plain" });
 
       await user.upload(fileInput, file);
 
-      focusMock.mockClear(); // Clear previous focus calls
+      focusMock.mockClear(); 
 
-      // Remove file
+      // Remover el archivo 
       const removeButton = screen.getByRole("button", { name: /eliminar archivo adjunto/i });
       await user.click(removeButton);
 
-      // Focus should be called after file removal
+      // llamada al foco después de eliminar el archivo
       await waitFor(() => {
         expect(focusMock).toHaveBeenCalled();
       }, { timeout: 200 });
@@ -350,7 +350,7 @@ describe("ChatInput", () => {
 
       const submitButton = screen.getByRole("button", { name: /enviar mensaje/i });
 
-      // Try to click submit with empty input
+      // hacer clic en enviar con la entrada vacía
       await user.click(submitButton);
 
       expect(mockStore.sendMessage).not.toHaveBeenCalled();

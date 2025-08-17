@@ -15,13 +15,14 @@ import {
   getEnrichedSystemInstruction,
   getEnrichedContext,
 } from "../services/summaryService";
+import { supabase, getRecentHistory } from "../services/supabaseClient";
 
 interface ChatState {
   conversations: Record<string, Conversation>;
   summaries: Record<string, ConversationSummary>;
   activeConversationId: string | null;
   isLoading: boolean;
-  chat: any; // ChatSession de Gemini
+  chat: any; // gemini session
   error: string | null;
   isFullscreen: boolean;
   isSidebarOpen: boolean;
@@ -34,7 +35,7 @@ interface ChatState {
   toast: { message: string; type: "success" | "error" | "info" } | null;
   isGeneratingSummary: boolean;
 
-  // Acciones
+  // actions
   setActiveConversationId: (id: string | null) => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
@@ -73,6 +74,13 @@ interface ChatState {
   getSummaryForConversation: (
     conversationId: string,
   ) => ConversationSummary | undefined;
+  saveToSupabase: (
+    conversationId: string,
+    userPrompt: string,
+    aiResponse: string,
+    metadata?: any,
+  ) => Promise<void>;
+  getRecentHistory: (conversationId: string, limit?: number) => Promise<any[]>;
   getEnrichedContextForConversation: (conversationId: string) => ChatMessage[];
   backgroundSummaryGeneration: (conversationId: string) => void;
 }
@@ -277,7 +285,7 @@ export const useChatStore = create<ChatState>()(
         await get().sendMessage(lastUserMessage.text, lastUserMessage.fileData);
       },
 
-      // Nueva función para editar y reenviar mensajes
+      // edit and resend messages
       editAndResendMessage: async (messageId: string, newText: string) => {
         const state = get();
         if (!state.activeConversationId) return;
@@ -285,36 +293,36 @@ export const useChatStore = create<ChatState>()(
         const conversation = state.conversations[state.activeConversationId];
         if (!conversation) return;
 
-        // Encontrar el mensaje a editar
+        // find message to edit
         const messageToEdit = conversation.messages.find(
           (m) => m.id === messageId,
         );
         if (!messageToEdit || messageToEdit.sender !== Sender.User) return;
 
-        // Encontrar el índice del mensaje
+        // get message index
         const messageIndex = conversation.messages.findIndex(
           (m) => m.id === messageId,
         );
 
-        // Eliminar todos los mensajes después del mensaje editado (incluyendo respuestas de IA)
+        // remove messages after this one
         const messagesBeforeEdit = conversation.messages.slice(
           0,
           messageIndex + 1,
         );
 
-        // Actualizar el texto del mensaje editado
+        // update message text
         const updatedMessage = { ...messageToEdit, text: newText };
         messagesBeforeEdit[messageIndex] = updatedMessage;
 
-        // Actualizar la conversación
+        // update conversation
         get().updateConversation(state.activeConversationId, {
           messages: messagesBeforeEdit,
         });
 
-        // Detener la edición
+        // stop editing
         get().stopEditingMessage();
 
-        // Reenviar el mensaje editado
+        // resend message
         await get().sendMessage(newText, messageToEdit.fileData);
       },
 
@@ -348,7 +356,7 @@ export const useChatStore = create<ChatState>()(
         const state = get();
         if ((!text && !file) || !state.activeConversationId) return;
 
-        // Lógica de risas (mantenida del código original)
+        // handle laughs
         const laughExpressions = [
           /^j(a|i)+j(a|i)+j(a|i)*$/i,
           /^j+$/i,
@@ -403,7 +411,7 @@ export const useChatStore = create<ChatState>()(
           return;
         }
 
-        // Mensaje normal
+        // normal message
         const userMessage: ChatMessage = {
           id: Date.now().toString(),
           sender: Sender.User,
@@ -417,7 +425,7 @@ export const useChatStore = create<ChatState>()(
         get().setLoading(true);
         get().setError(null);
 
-        // Actualizar título si es el primer mensaje
+        // update title if first message
         const conversation = state.conversations[state.activeConversationId];
         if (
           !conversation.messages.some(
@@ -430,10 +438,10 @@ export const useChatStore = create<ChatState>()(
           });
         }
 
-        // Añadir mensaje del usuario
+        // add user message
         get().addMessage(state.activeConversationId, userMessage);
 
-        // Crear placeholder para la respuesta de la IA
+        // AI response placeholder
         const aiMessageId = (Date.now() + 1).toString();
         const aiMessage: ChatMessage = {
           id: aiMessageId,
@@ -442,7 +450,7 @@ export const useChatStore = create<ChatState>()(
         };
         get().addMessage(state.activeConversationId, aiMessage);
 
-        // Verificar si necesita generar resumen automático
+        // check if needs summary
         const updatedConversation =
           get().conversations[state.activeConversationId];
         const existingSummary = get().summaries[state.activeConversationId];
@@ -453,7 +461,24 @@ export const useChatStore = create<ChatState>()(
         try {
           const config = PERSONALITIES[conversation.personality];
 
-          // Usar contexto enriquecido con resúmenes para conversaciones largas
+          // get recent history for memory
+          const recentHistory = await getRecentHistory(
+            state.activeConversationId,
+            3,
+          );
+
+          // build context with history
+          let contextWithMemory = config.systemInstruction;
+          if (recentHistory.length > 0) {
+            const historyContext = recentHistory
+              .map(
+                (h) => `Usuario: ${h.user_prompt}\nAsistente: ${h.ai_response}`,
+              )
+              .join("\n\n");
+            contextWithMemory += `\n\nContexto de conversación reciente:\n${historyContext}`;
+          }
+
+          // for long conversations
           const enrichedContext = get().getEnrichedContextForConversation(
             state.activeConversationId,
           );
@@ -461,13 +486,13 @@ export const useChatStore = create<ChatState>()(
             state.activeConversationId,
           );
           const enrichedSystemInstruction = getEnrichedSystemInstruction(
-            config.systemInstruction,
+            contextWithMemory,
             summary,
           );
 
           if (config.provider === "openai") {
-            // Lógica para OpenAI - usar contexto enriquecido con resúmenes
-            const enrichedHistory = enrichedContext.slice(0, -2); // Excluir mensaje del usuario y placeholder de IA
+            // OpenAI logic
+            const enrichedHistory = enrichedContext.slice(0, -2); // exclude user msg and AI placeholder
 
             const tools = [
               {
@@ -498,13 +523,13 @@ export const useChatStore = create<ChatState>()(
               },
             ];
 
-            // Importar dinámicamente para evitar errores de build
+            // dynamic import
             const { getOpenAIStream } = await import(
               "../services/openaiService"
             );
             const { performSearch } = await import("../services/searchService");
 
-            // Crear config enriquecido con resumen
+            // config
             const enrichedConfig = {
               ...config,
               systemInstruction: enrichedSystemInstruction,
@@ -600,9 +625,9 @@ export const useChatStore = create<ChatState>()(
               }
             }
           } else {
-            // Lógica para Gemini
+            // Gemini logic
             if (file) {
-              // Importar dinámicamente
+              // dynamic import
               const { analyzeFileWithBackend } = await import(
                 "../services/backendService"
               );
@@ -619,14 +644,14 @@ export const useChatStore = create<ChatState>()(
                 });
               }
             } else {
-              // Importar dinámicamente
+              // dynamic import
               const { startChat, internetSearchTool, realTimeClockTool } =
                 await import("../services/geminiService");
               const { performSearch } = await import(
                 "../services/searchService"
               );
 
-              // Inicializar chat de Gemini con contexto enriquecido
+              // start gemini chat
               const apiHistory = enrichedContext
                 .filter((m) => m.id !== "initial-message" && !m.fileInfo)
                 .map((msg) => ({
@@ -741,10 +766,38 @@ export const useChatStore = create<ChatState>()(
           get().setError(
             `Error en envío de mensaje: ${e instanceof Error ? e.message : "Error desconocido"}`,
           );
-          // Eliminar los mensajes fallidos
+          // remove failed messages
           get().deleteMessage(state.activeConversationId, userMessage.id);
           get().deleteMessage(state.activeConversationId, aiMessageId);
         } finally {
+          // save interaction to supabase
+          if (supabase) {
+            try {
+              const finalConversation =
+                get().conversations[state.activeConversationId];
+              if (finalConversation) {
+                const finalAiMessage = finalConversation.messages.find(
+                  (m) => m.id === aiMessageId,
+                );
+                if (finalAiMessage && finalAiMessage.text.trim()) {
+                  await get().saveToSupabase(
+                    state.activeConversationId,
+                    userMessage.text,
+                    finalAiMessage.text,
+                    {
+                      personality: conversation.personality,
+                      hasFile: !!file,
+                      fileType: file?.type,
+                      timestamp: new Date().toISOString(),
+                    },
+                  );
+                }
+              }
+            } catch (supabaseError) {
+              console.error("Error guardando en Supabase:", supabaseError);
+            }
+          }
+
           get().setLoading(false);
         }
       },
@@ -802,7 +855,7 @@ export const useChatStore = create<ChatState>()(
         get().setSearchEnabled(!state.isSearchEnabled);
       },
 
-      // Funciones de resumen y memoria a largo plazo
+      // summary functions
       generateSummaryForConversation: async (conversationId: string) => {
         const state = get();
         const conversation = state.conversations[conversationId];
@@ -862,10 +915,48 @@ export const useChatStore = create<ChatState>()(
             .generateSummaryForConversation(conversationId)
             .catch(console.error);
         }, 2000); // Esperar 2 segundos después del último mensaje
+        return summary;
+      },
+
+      // save interaction to supabase
+      saveToSupabase: async (
+        conversationId: string,
+        userPrompt: string,
+        aiResponse: string,
+        metadata = {},
+      ) => {
+        if (!supabase) {
+          console.log("Supabase no configurado, saltando guardado");
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from("conversations_history")
+            .insert({
+              conversation_id: conversationId,
+              user_prompt: userPrompt,
+              ai_response: aiResponse,
+              metadata: metadata,
+            });
+
+          if (error) {
+            console.error("Error insertando en Supabase:", error);
+            throw error;
+          }
+        } catch (error) {
+          console.error("Error guardando en Supabase:", error);
+          throw error;
+        }
+      },
+
+      // get recent history for memory
+      getRecentHistory: async (conversationId: string, limit = 3) => {
+        return await getRecentHistory(conversationId, limit);
       },
     }),
     {
-      name: "chat-store-v1",
+      name: "chat-storage",
       partialize: (state) => ({
         conversations: state.conversations,
         summaries: state.summaries,

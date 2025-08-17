@@ -8,7 +8,7 @@ import { useChatStore } from '../store/chatStore';
 
 // Altura estimada por mensaje (puede ajustarse según el diseño)
 const ITEM_HEIGHT = 120;
-const CONTAINER_HEIGHT = 'calc(100vh - 200px)'; // Ajustar según el layout
+const CONTAINER_HEIGHT = 'calc(100vh - 200px)'; // Se puede ajustar según el layout
 
 interface MessageItemProps {
   index: number;
@@ -88,7 +88,7 @@ const VirtualizedMessageList: React.FC = () => {
   const showIndicator = isLoading && visibleMessages.length > 0 &&
     visibleMessages[visibleMessages.length - 1]?.sender === Sender.User;
 
-  // Si hay pocos mensajes, usar renderizado normal para mejor UX
+  // renderizado normal para mejor UX (si es que hay pocos mensajes)
   if (visibleMessages.length < 10) {
     return (
       <div className="flex-1 overflow-y-auto p-6">
@@ -121,7 +121,7 @@ const VirtualizedMessageList: React.FC = () => {
       <div className="flex-1 relative">
         <List
           ref={listRef}
-          height={window.innerHeight - 200} // Altura dinámica
+          height={window.innerHeight - 200} 
           itemCount={visibleMessages.length}
           itemSize={ITEM_HEIGHT}
           itemData={itemData}
@@ -131,7 +131,7 @@ const VirtualizedMessageList: React.FC = () => {
         </List>
       </div>
 
-      {/* Indicador de typing/tool fuera de la lista virtualizada */}
+      {/* Indicador del typing/tool fuera de la lista virtualizada */}
       {showIndicator && (
         <div className="px-6 pb-4">
           <div className="flex w-full my-2 justify-start">

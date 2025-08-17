@@ -1,107 +1,108 @@
 {
   "app": {
-    "title": "Vortex-IA - Chatbot Inteligente",
-    "description": "Chatbot con doble personalidad IA, análisis multimodal y respuestas en tiempo real"
+    "title": "Vortex Chat",
+    "description": "Chat con IA simple y rápido"
   },
   "sidebar": {
     "newChat": "Nuevo Chat",
     "history": "Historial",
-    "conversations": "conversaciones",
-    "noConversations": "No hay conversaciones aún.",
-    "startFirstConversation": "¡Inicia tu primera conversación!",
-    "generatingSummary": "Generando resumen..."
+    "conversations": "chats",
+    "noConversations": "No hay chats aún",
+    "startFirstConversation": "Empieza tu primer chat",
+    "generatingSummary": "Creando resumen..."
   },
   "chatInput": {
-    "placeholder": "Escribe tu mensaje...",
-    "placeholderWithFile": "Pregunta sobre el archivo adjunto...",
-    "attachFile": "Adjuntar archivo",
-    "sendMessage": "Enviar mensaje",
-    "removeAttachment": "Eliminar archivo adjunto",
-    "attached": "Adjunto: {{fileName}}"
+    "placeholder": "Escribe algo...",
+    "placeholderWithFile": "Pregunta sobre el archivo...",
+    "attachFile": "Subir archivo",
+    "sendMessage": "Enviar",
+    "removeAttachment": "Quitar archivo",
+    "attached": "Archivo: {{fileName}}"
   },
   "messages": {
     "bot": "Bot",
     "typing": "Escribiendo...",
-    "regenerate": "Regenerar respuesta",
-    "edit": "Editar mensaje",
-    "delete": "Eliminar mensaje",
-    "copy": "Copiar mensaje"
+    "regenerate": "Regenerar",
+    "edit": "Editar",
+    "delete": "Borrar",
+    "copy": "Copiar"
   },
   "personalities": {
     "flash": {
       "name": "Modelo Flash",
-      "description": "Respuestas rápidas y versátiles con Gemini",
-      "welcomeMessage": "¡Hola! Soy Vortex-IA. Pregúntame cualquier cosa, desde física cuántica hasta literatura del Siglo de Oro."
+      "description": "Respuestas rápidas",
+      "welcomeMessage": "Hola! ¿En qué te ayudo?"
     },
     "developer": {
       "name": "Modelo Desarrollador",
-      "description": "Especialista en programación y desarrollo con OpenAI",
-      "welcomeMessage": "Soy el Modelo Desarrollador (OpenAI). ¿Listo para construir algo increíble?"
+      "description": "Para programar",
+      "welcomeMessage": "Hey! ¿Qué vamos a programar?"
     }
   },
   "menu": {
     "rename": "Renombrar",
-    "delete": "Eliminar",
+    "delete": "Borrar",
     "download": "Descargar",
-    "changePersonality": "Cambiar personalidad",
-    "toggleSearch": "Alternar búsqueda",
+    "changePersonality": "Cambiar modo",
+    "toggleSearch": "Buscar",
     "toggleFullscreen": "Pantalla completa",
-    "settings": "Configuración"
+    "settings": "Config"
   },
   "states": {
     "loading": "Cargando...",
     "searching": "Buscando...",
     "processing": "Procesando...",
-    "generating": "Generando...",
-    "analyzing": "Analizando archivo...",
-    "uploading": "Subiendo archivo...",
+    "generating": "Creando...",
+    "analyzing": "Analizando...",
+    "uploading": "Subiendo...",
     "connecting": "Conectando...",
-    "disconnected": "Desconectado",
+    "loadingContext": "Cargando contexto...",
+    "disconnected": "Sin conexión",
     "reconnecting": "Reconectando..."
   },
   "tools": {
-    "internetSearch": "Búsqueda en Internet",
-    "getCurrentTime": "Obtener hora actual",
+    "internetSearch": "Búsqueda web",
+    "getCurrentTime": "Hora actual",
     "searchingFor": "Buscando: {{query}}",
-    "searchResults": "Resultados de búsqueda",
-    "noResultsFound": "No se encontraron resultados"
+    "searchResults": "Resultados",
+    "noResultsFound": "Sin resultados"
   },
   "errors": {
-    "general": "Ha ocurrido un error inesperado",
-    "networkError": "Error de conexión. Verifica tu conexión a internet.",
-    "apiKeyMissing": "Clave de API no configurada",
-    "apiKeyInvalid": "Clave de API inválida",
-    "quotaExceeded": "Cuota de API excedida",
-    "fileUploadError": "Error al subir el archivo",
-    "fileTooBig": "El archivo es demasiado grande",
-    "fileTypeNotSupported": "Tipo de archivo no soportado",
-    "conversationNotFound": "Conversación no encontrada",
-    "messageTooLong": "El mensaje es demasiado largo",
-    "cannotDeleteLastConversation": "No se puede eliminar la última conversación",
-    "summaryGenerationFailed": "Error al generar resumen de conversación"
+    "general": "Algo salió mal",
+    "networkError": "Sin internet",
+    "apiKeyMissing": "Falta API key",
+    "apiKeyInvalid": "API key incorrecta",
+    "quotaExceeded": "Límite excedido",
+    "fileUploadError": "Error subiendo archivo",
+    "fileTooBig": "Archivo muy grande",
+    "fileTypeNotSupported": "Tipo de archivo no válido",
+    "conversationNotFound": "Chat no encontrado",
+    "messageTooLong": "Mensaje muy largo",
+    "cannotDeleteLastConversation": "No se puede borrar el último chat",
+    "summaryGenerationFailed": "Error creando resumen"
   },
   "success": {
-    "messageRegenerating": "Regenerando respuesta...",
-    "messageCopied": "Mensaje copiado al portapapeles",
-    "conversationRenamed": "Conversación renombrada",
-    "conversationDeleted": "Conversación eliminada",
-    "conversationDownloaded": "Conversación descargada",
-    "fileUploaded": "Archivo subido correctamente",
-    "settingsSaved": "Configuración guardada",
-    "newConversationCreated": "Nueva conversación iniciada",
-    "personalityChanged": "Personalidad cambiada",
-    "summaryGenerated": "Resumen de conversación actualizado",
-    "searchEnabled": "Búsqueda habilitada",
-    "searchDisabled": "Búsqueda deshabilitada",
-    "fullscreenEnabled": "Modo pantalla completa activado",
-    "fullscreenDisabled": "Modo pantalla completa desactivado"
+    "messageRegenerating": "Regenerando...",
+    "messageCopied": "Copiado",
+    "conversationRenamed": "Renombrado",
+    "conversationDeleted": "Borrado",
+    "conversationDownloaded": "Descargado",
+    "fileUploaded": "Archivo subido",
+    "settingsSaved": "Guardado",
+    "newConversationCreated": "Nuevo chat",
+    "personalityChanged": "Modo cambiado",
+    "summaryGenerated": "Resumen creado",
+    "searchEnabled": "Búsqueda activada",
+    "searchDisabled": "Búsqueda desactivada",
+    "fullscreenEnabled": "Pantalla completa",
+    "fullscreenDisabled": "Pantalla normal"
   },
   "actions": {
     "send": "Enviar",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
     "save": "Guardar",
-    "delete": "Eliminar",
+    "delete": "Borrar",
     "rename": "Renombrar",
     "download": "Descargar",
     "upload": "Subir",
@@ -115,70 +116,70 @@
     "refresh": "Actualizar"
   },
   "confirmations": {
-    "deleteConversation": "¿Estás seguro de que quieres eliminar esta conversación?",
-    "deleteMessage": "¿Estás seguro de que quieres eliminar este mensaje?",
-    "clearAllConversations": "¿Estás seguro de que quieres eliminar todas las conversaciones?",
-    "resetSettings": "¿Estás seguro de que quieres restablecer la configuración?"
+    "deleteConversation": "¿Borrar este chat?",
+    "deleteMessage": "¿Borrar mensaje?",
+    "clearAllConversations": "¿Borrar todos los chats?",
+    "resetSettings": "¿Resetear configuración?"
   },
   "file": {
-    "selectFile": "Seleccionar archivo",
-    "dropFileHere": "Arrastra el archivo aquí",
-    "supportedFormats": "Formatos soportados: {{formats}}",
-    "maxFileSize": "Tamaño máximo: {{size}}",
-    "processing": "Procesando archivo...",
-    "analyzing": "Analizando contenido...",
-    "ready": "Archivo listo para analizar"
+    "selectFile": "Elegir archivo",
+    "dropFileHere": "Suelta el archivo aquí",
+    "supportedFormats": "Formatos: {{formats}}",
+    "maxFileSize": "Máximo: {{size}}",
+    "processing": "Procesando...",
+    "analyzing": "Analizando...",
+    "ready": "Listo"
   },
   "accessibility": {
-    "openSidebar": "Abrir panel lateral",
-    "closeSidebar": "Cerrar panel lateral",
-    "scrollToBottom": "Ir al final de la conversación",
-    "focusInput": "Enfocar campo de texto",
+    "openSidebar": "Abrir sidebar",
+    "closeSidebar": "Cerrar sidebar",
+    "scrollToBottom": "Ir al final",
+    "focusInput": "Focus input",
     "openMenu": "Abrir menú",
     "closeMenu": "Cerrar menú",
-    "selectPersonality": "Seleccionar personalidad de IA"
+    "selectPersonality": "Elegir modo"
   },
   "time": {
     "now": "ahora",
-    "minuteAgo": "hace un minuto",
-    "minutesAgo": "hace {{count}} minutos",
-    "hourAgo": "hace una hora",
-    "hoursAgo": "hace {{count}} horas",
-    "dayAgo": "hace un día",
+    "minuteAgo": "hace 1 min",
+    "minutesAgo": "hace {{count}} min",
+    "hourAgo": "hace 1h",
+    "hoursAgo": "hace {{count}}h",
+    "dayAgo": "ayer",
     "daysAgo": "hace {{count}} días",
-    "weekAgo": "hace una semana",
-    "weeksAgo": "hace {{count}} semanas",
-    "monthAgo": "hace un mes",
+    "weekAgo": "hace 1 sem",
+    "weeksAgo": "hace {{count}} sem",
+    "monthAgo": "hace 1 mes",
     "monthsAgo": "hace {{count}} meses",
-    "yearAgo": "hace un año",
+    "yearAgo": "hace 1 año",
     "yearsAgo": "hace {{count}} años"
   },
   "search": {
-    "placeholder": "Buscar en conversaciones...",
-    "noResults": "No se encontraron resultados para '{{query}}'",
-    "resultsFound": "{{count}} resultado(s) encontrado(s)",
+    "placeholder": "Buscar...",
+    "noResults": "Sin resultados para '{{query}}'",
+    "resultsFound": "{{count}} resultado(s)",
     "searchInProgress": "Buscando...",
-    "clearSearch": "Limpiar búsqueda"
+    "clearSearch": "Limpiar"
   },
   "settings": {
     "language": "Idioma",
     "theme": "Tema",
     "notifications": "Notificaciones",
     "privacy": "Privacidad",
-    "about": "Acerca de",
+    "about": "Info",
     "version": "Versión",
-    "clearData": "Limpiar datos",
-    "exportData": "Exportar datos",
-    "importData": "Importar datos"
+    "clearData": "Borrar datos",
+    "exportData": "Exportar",
+    "importData": "Importar"
   },
   "features": {
-    "dualPersonality": "Doble Personalidad de IA",
-    "multimodalAnalysis": "Análisis Multimodal",
-    "realTimeResponses": "Respuestas en Tiempo Real",
-    "conversationMemory": "Memoria de Conversación",
-    "internetSearch": "Búsqueda en Internet",
-    "fileAnalysis": "Análisis de Archivos",
-    "codeGeneration": "Generación de Código",
-    "languageSupport": "Soporte Multiidioma"
+    "dualPersonality": "Dos modos IA",
+    "multimodalAnalysis": "Analiza archivos",
+    "realTimeResponses": "Respuestas rápidas",
+    "conversationMemory": "Memoria de chat",
+    "internetSearch": "Búsqueda web",
+    "fileAnalysis": "Análisis archivos",
+    "codeGeneration": "Generar código",
+    "languageSupport": "Multi idioma"
   }
 }

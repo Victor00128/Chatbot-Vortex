@@ -3,64 +3,10 @@
     <head>
         <meta charset="UTF-8" />
         <link rel="icon" href="/favicon.ico" />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#1C1C1C" />
-        <meta name="color-scheme" content="dark" />
-        <meta
-            name="description"
-            content="Vortex-IA - Chatbot inteligente con doble personalidad IA. Conversaciones fluidas con Gemini Flash y GPT-4o-mini, análisis multimodal y respuestas en tiempo real."
-        />
-        <meta
-            name="keywords"
-            content="chatbot, AI, inteligencia artificial, Gemini, OpenAI, GPT-4, conversaciones, análisis multimodal"
-        />
-        <meta name="author" content="Vortex-IA" />
-        <meta name="robots" content="index, follow" />
-
-        <!-- Open Graph / Facebook -->
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="Vortex-IA - Chatbot Inteligente" />
-        <meta
-            property="og:description"
-            content="Chatbot con doble personalidad IA, análisis multimodal y respuestas en tiempo real"
-        />
-        <meta property="og:site_name" content="Vortex-IA" />
-
-        <!-- Twitter -->
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Vortex-IA - Chatbot Inteligente" />
-        <meta
-            name="twitter:description"
-            content="Chatbot con doble personalidad IA, análisis multimodal y respuestas en tiempo real"
-        />
-
-        <!-- Performance and Preload Hints -->
-        <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
-        <link rel="preconnect" href="https://esm.sh" crossorigin />
-        <link
-            rel="dns-prefetch"
-            href="https://generativelanguage.googleapis.com"
-        />
-        <link rel="dns-prefetch" href="https://api.openai.com" />
-
-        <!-- Accessibility and UX -->
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="msapplication-TileColor" content="#1C1C1C" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-
-        <!-- PWA Support -->
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-            name="apple-mobile-web-app-status-bar-style"
-            content="black-translucent"
-        />
-        <meta name="apple-mobile-web-app-title" content="Vortex-IA" />
-
-        <title>Vortex-IA - Chatbot Inteligente con Doble Personalidad IA</title>
+        <meta name="description" content="Chat con IA simple" />
+        <title>Vortex Chat</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <script type="importmap">
             {
@@ -78,24 +24,22 @@
             }
         </script>
         <style>
-            /* Custom Scrollbar Styling */
             ::-webkit-scrollbar {
                 width: 8px;
                 height: 8px;
             }
             ::-webkit-scrollbar-track {
-                background: #18181b; /* bg-zinc-900 */
+                background: #18181b;
             }
             ::-webkit-scrollbar-thumb {
-                background-color: #52525b; /* bg-zinc-600 */
+                background-color: #52525b;
                 border-radius: 4px;
                 border: 2px solid #18181b;
             }
             ::-webkit-scrollbar-thumb:hover {
-                background-color: #71717a; /* bg-zinc-500 */
+                background-color: #71717a;
             }
 
-            /* Message Animation */
             @keyframes fade-in-slide-up {
                 from {
                     opacity: 0;
@@ -110,7 +54,6 @@
                 animation: fade-in-slide-up 0.4s ease-out forwards;
             }
 
-            /* Toast Notification Animation */
             @keyframes fade-in-out {
                 0% {
                     opacity: 0;
@@ -155,21 +98,15 @@
             >
                 <div>
                     <h1 style="font-size: 2rem; margin-bottom: 1rem">
-                        Vortex-IA
+                        Vortex Chat
                     </h1>
                     <p style="font-size: 1.2rem; margin-bottom: 1rem">
-                        Para usar esta aplicación necesitas habilitar JavaScript
-                        en tu navegador.
-                    </p>
-                    <p style="font-size: 1rem; opacity: 0.8">
-                        Vortex-IA es un chatbot inteligente que requiere
-                        JavaScript para funcionar correctamente.
+                        Necesitas JavaScript habilitado
                     </p>
                 </div>
             </div>
         </noscript>
 
-        <!-- Loading Screen -->
         <div
             id="initial-loader"
             style="
@@ -206,7 +143,7 @@
                         font-size: 1.1rem;
                     "
                 >
-                    Cargando Vortex-IA...
+                    Cargando...
                 </p>
             </div>
         </div>
@@ -219,7 +156,6 @@
         <script type="module" src="/index.tsx"></script>
 
         <script>
-            // Hide loader once app is loaded
             window.addEventListener("load", () => {
                 setTimeout(() => {
                     const loader = document.getElementById("initial-loader");
@@ -234,19 +170,16 @@
                 }, 500);
             });
 
-            // Add spin animation for loader
             const style = document.createElement("style");
             style.textContent = `
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-        /* Improve focus visibility for accessibility */
         *:focus-visible {
           outline: 2px solid #3b82f6 !important;
           outline-offset: 2px !important;
         }
-        /* Reduce motion for users who prefer it */
         @media (prefers-reduced-motion: reduce) {
           * {
             animation-duration: 0.01ms !important;

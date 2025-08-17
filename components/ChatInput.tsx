@@ -22,18 +22,17 @@ const ChatInput: React.FC = () => {
     ? PERSONALITIES[activeConversation.personality].type
     : "chat";
 
-  // Manejo inteligente del foco - devolver foco al textarea después de que la IA responda
+  // auto focus cuando termina la IA
   useEffect(() => {
     if (prevLoadingRef.current && !isLoading && textareaRef.current) {
-      // La IA acaba de terminar de responder, devolver foco al textarea
       setTimeout(() => {
         textareaRef.current?.focus();
-      }, 300); // Pequeño delay para que la animación termine
+      }, 300);
     }
     prevLoadingRef.current = isLoading;
   }, [isLoading]);
 
-  // Focus automático al cambiar de conversación
+  // focus al cambiar chat
   useEffect(() => {
     if (activeConversationId && textareaRef.current) {
       setTimeout(() => {
@@ -58,7 +57,7 @@ const ChatInput: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
-      // Devolver foco al textarea después de seleccionar archivo
+      // Se Devuelve el foco al textarea después de seleccionar archivo
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 100);
@@ -109,7 +108,7 @@ const ChatInput: React.FC = () => {
             </button>
           </div>
         )}
-        {/* CORRECCIÓN DE UI MÓVIL: Se usa `items-end` para alinear en la base y `flex-shrink-0` en los botones */}
+        {/* CORRECCIÓN DE UI MÓVIL: Se usa `items-end` para alinear la base y `flex-shrink-0` en los botones */}
         <div className="flex items-end gap-2">
           {personalityType !== "image" && (
             <button

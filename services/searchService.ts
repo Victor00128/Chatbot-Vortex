@@ -29,7 +29,7 @@ export const performSearch = async (query: string): Promise<SearchResult[]> => {
 
     const data = await response.json();
 
-    // Devolver solo los resultados orgánicos que son los más relevantes para un resumen
+    // Devuelve solo los resultados orgánicos que son los más relevantes para un resumen
     return data.organic || [];
 
   } catch (error) {

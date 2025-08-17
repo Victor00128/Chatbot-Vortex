@@ -1,78 +1,95 @@
-import { GoogleGenerativeAI, ChatSession, GenerativeModel, FunctionDeclarationsTool } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  ChatSession,
+  GenerativeModel,
+  FunctionDeclarationsTool,
+} from "@google/generative-ai";
 
-// Definición de la herramienta de búsqueda en internet
+// internet search tool
 export const internetSearchTool: FunctionDeclarationsTool = {
   functionDeclarations: [
     {
       name: "internetSearch",
-      description: "Busca en internet información en tiempo real sobre un tema específico. Úsalo para eventos recientes, precios, resultados deportivos, etc.",
+      description:
+        "Busca en internet información en tiempo real sobre un tema específico. Úsalo para eventos recientes, precios, resultados deportivos, etc.",
       parameters: {
         type: "OBJECT",
         properties: {
           query: {
             type: "STRING",
-            description: "La consulta de búsqueda precisa para obtener la información."
-          }
+            description:
+              "La consulta de búsqueda precisa para obtener la información.",
+          },
         },
-        required: ["query"]
-      }
-    }
-  ]
+        required: ["query"],
+      },
+    },
+  ],
 };
 
-// Definición de la herramienta de reloj en tiempo real
+// real time clock tool
 export const realTimeClockTool: FunctionDeclarationsTool = {
   functionDeclarations: [
     {
       name: "getCurrentTime",
-      description: "Obtiene la fecha y hora actual. Úsala para responder cualquier pregunta sobre la fecha, el día de la semana, la hora actual o cualquier consulta temporal.",
+      description:
+        "Obtiene la fecha y hora actual. Úsala para responder cualquier pregunta sobre la fecha, el día de la semana, la hora actual o cualquier consulta temporal.",
       parameters: {
         type: "OBJECT",
         properties: {},
-        required: []
-      }
-    }
-  ]
+        required: [],
+      },
+    },
+  ],
 };
 
 let genAI: GoogleGenerativeAI | undefined;
 
 function getGoogleAI() {
-    if (!genAI) {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error("La clave de API de Gemini (VITE_GEMINI_API_KEY) no está configurada.");
-        }
-        genAI = new GoogleGenerativeAI(apiKey);
+  if (!genAI) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        "La clave de API de Gemini (VITE_GEMINI_API_KEY) no está configurada.",
+      );
     }
-    return genAI;
+    genAI = new GoogleGenerativeAI(apiKey);
+  }
+  return genAI;
 }
 
-export function startChat(systemInstruction: string, model: string, history?: any[], tools?: FunctionDeclarationsTool[]): ChatSession {
-    const genAI = getGoogleAI();
-    const generativeModel: GenerativeModel = genAI.getGenerativeModel({ 
-        model: model,
-        systemInstruction: systemInstruction,
-        tools: tools
-    });
-    
-    // Convertir el historial al formato correcto si existe
-    const formattedHistory = history ? history.map(msg => ({
+export function startChat(
+  systemInstruction: string,
+  model: string,
+  history?: any[],
+  tools?: FunctionDeclarationsTool[],
+): ChatSession {
+  const genAI = getGoogleAI();
+  const generativeModel: GenerativeModel = genAI.getGenerativeModel({
+    model: model,
+    systemInstruction: systemInstruction,
+    tools: tools,
+  });
+
+  // format history if exists
+  const formattedHistory = history
+    ? history.map((msg) => ({
         role: msg.role,
-        parts: [{ text: msg.parts[0].text }]
-    })) : [];
-    
-    const chatSession = generativeModel.startChat({
-        history: formattedHistory,
-        generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-        },
-    });
-    
-    return chatSession;
+        parts: [{ text: msg.parts[0].text }],
+      }))
+    : [];
+
+  const chatSession = generativeModel.startChat({
+    history: formattedHistory,
+    generationConfig: {
+      temperature: 0.7,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 8192,
+    },
+  });
+
+  return chatSession;
 }
 
 /**
@@ -82,15 +99,18 @@ export function startChat(systemInstruction: string, model: string, history?: an
  * @param model The model to use for generation (ignored, always uses gemini-1.5-flash).
  * @returns The generated text content.
  */
-export async function generateContent(prompt: string, model: string): Promise<string> {
-    const genAI = getGoogleAI();
-    const generativeModel: GenerativeModel = genAI.getGenerativeModel({ 
-        model: model
-    });
-    
-    const result = await generativeModel.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+export async function generateContent(
+  prompt: string,
+  model: string,
+): Promise<string> {
+  const genAI = getGoogleAI();
+  const generativeModel: GenerativeModel = genAI.getGenerativeModel({
+    model: model,
+  });
+
+  const result = await generativeModel.generateContent(prompt);
+  const response = await result.response;
+  return response.text();
 }
 
 /**
@@ -98,10 +118,12 @@ export async function generateContent(prompt: string, model: string): Promise<st
  * @param file The file to convert.
  * @returns A promise that resolves with the Part object.
  */
-export async function fileToGenerativePart(file: File): Promise<{ inlineData: { data: string; mimeType: string; }; }> {
+export async function fileToGenerativePart(
+  file: File,
+): Promise<{ inlineData: { data: string; mimeType: string } }> {
   const base64EncodedDataPromise = new Promise<string>((resolve) => {
     const reader = new FileReader();
-    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+    reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
     reader.readAsDataURL(file);
   });
   const data = await base64EncodedDataPromise;

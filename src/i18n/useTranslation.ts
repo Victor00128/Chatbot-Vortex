@@ -160,13 +160,13 @@ export type TranslationKey =
 
 // Opciones extendidas para el hook
 export interface UseTranslationExtendedOptions extends UseTranslationOptions {
-  // Namespace por defecto
+  // Namespace 
   namespace?: TranslationNamespace;
-  // Si debe mostrar las claves cuando faltan traducciones
+  // mostrar las claves cuando faltan traducciones
   showKeys?: boolean;
 }
 
-// Resultado del hook extendido
+// hook extendido
 export interface UseTranslationResult {
   // Función de traducción principal
   t: (key: TranslationKey, options?: any) => string;

@@ -62,13 +62,13 @@ i18n
       // Excluir ciertos idiomas del cache
       excludeCacheFor: ["cimode"],
 
-      // Tiempo de vida del cache en días
+      // Tiempo de vida del cache (dias)
       cookieMinutes: 60 * 24 * 30, // 30 días
     },
 
     // Configuración de interpolación
     interpolation: {
-      // React ya escapa por defecto, no necesitamos escapar aquí
+      // React 
       escapeValue: false,
 
       // Formato de las variables
@@ -152,7 +152,7 @@ i18n
     debug: import.meta.env.MODE === "development",
 
     // Configuración de carga de recursos
-    load: "languageOnly", // Solo cargar idioma principal (es en lugar de es-ES)
+    load: "languageOnly",
 
     // Configuración de pluralización
     pluralSeparator: "_",

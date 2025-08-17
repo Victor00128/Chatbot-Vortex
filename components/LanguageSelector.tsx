@@ -36,7 +36,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const currentLanguage = languages.find((lang) => lang.code === language) || languages[0];
 
-  // Cerrar dropdown al hacer click fuera
+  // Cerrar el dropdown al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -48,7 +48,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Cerrar dropdown con Escape
+  // Cerrar el dropdown con Escape
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -86,7 +86,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   };
 
-  // Renderizado para variante toggle (solo dos idiomas)
+  // Renderizado para el variante toggle (solo dos idiomas)
   if (variant === "toggle") {
     const otherLanguage = languages.find((lang) => lang.code !== language) || languages[1];
 
@@ -142,7 +142,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     );
   }
 
-  // Renderizado para variante compact
+  // Renderizado para el variante compact
   if (variant === "compact") {
     return (
       <div className={`relative ${className}`} ref={dropdownRef}>

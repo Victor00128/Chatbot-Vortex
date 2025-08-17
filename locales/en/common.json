@@ -1,50 +1,50 @@
 {
   "app": {
-    "title": "Vortex-AI - Intelligent Chatbot",
-    "description": "Chatbot with dual AI personality, multimodal analysis and real-time responses"
+    "title": "Vortex Chat",
+    "description": "Simple AI chat app"
   },
   "sidebar": {
     "newChat": "New Chat",
     "history": "History",
-    "conversations": "conversations",
-    "noConversations": "No conversations yet.",
-    "startFirstConversation": "Start your first conversation!",
-    "generatingSummary": "Generating summary..."
+    "conversations": "chats",
+    "noConversations": "No chats yet",
+    "startFirstConversation": "Start your first chat",
+    "generatingSummary": "Making summary..."
   },
   "chatInput": {
-    "placeholder": "Type your message...",
-    "placeholderWithFile": "Ask about the attached file...",
-    "attachFile": "Attach file",
-    "sendMessage": "Send message",
-    "removeAttachment": "Remove file attachment",
-    "attached": "Attached: {{fileName}}"
+    "placeholder": "Type something...",
+    "placeholderWithFile": "Ask about the file...",
+    "attachFile": "Upload file",
+    "sendMessage": "Send",
+    "removeAttachment": "Remove file",
+    "attached": "File: {{fileName}}"
   },
   "messages": {
     "bot": "Bot",
     "typing": "Typing...",
-    "regenerate": "Regenerate response",
-    "edit": "Edit message",
-    "delete": "Delete message",
-    "copy": "Copy message"
+    "regenerate": "Retry",
+    "edit": "Edit",
+    "delete": "Delete",
+    "copy": "Copy"
   },
   "personalities": {
     "flash": {
       "name": "Flash Model",
-      "description": "Fast and versatile responses with Gemini",
-      "welcomeMessage": "Hello! I'm Vortex-AI. Ask me anything, from quantum physics to Golden Age literature."
+      "description": "Quick responses",
+      "welcomeMessage": "Hi! How can I help?"
     },
     "developer": {
       "name": "Developer Model",
-      "description": "Programming and development specialist with OpenAI",
-      "welcomeMessage": "I'm the Developer Model (OpenAI). Ready to build something incredible?"
+      "description": "For coding",
+      "welcomeMessage": "Hey! What are we building?"
     }
   },
   "menu": {
     "rename": "Rename",
     "delete": "Delete",
     "download": "Download",
-    "changePersonality": "Change personality",
-    "toggleSearch": "Toggle search",
+    "changePersonality": "Change mode",
+    "toggleSearch": "Search",
     "toggleFullscreen": "Fullscreen",
     "settings": "Settings"
   },
@@ -52,49 +52,50 @@
     "loading": "Loading...",
     "searching": "Searching...",
     "processing": "Processing...",
-    "generating": "Generating...",
-    "analyzing": "Analyzing file...",
-    "uploading": "Uploading file...",
+    "generating": "Creating...",
+    "analyzing": "Analyzing...",
+    "uploading": "Uploading...",
     "connecting": "Connecting...",
-    "disconnected": "Disconnected",
+    "loadingContext": "Loading context...",
+    "disconnected": "No connection",
     "reconnecting": "Reconnecting..."
   },
   "tools": {
-    "internetSearch": "Internet Search",
-    "getCurrentTime": "Get current time",
+    "internetSearch": "Web search",
+    "getCurrentTime": "Current time",
     "searchingFor": "Searching: {{query}}",
-    "searchResults": "Search Results",
-    "noResultsFound": "No results found"
+    "searchResults": "Results",
+    "noResultsFound": "No results"
   },
   "errors": {
-    "general": "An unexpected error occurred",
-    "networkError": "Connection error. Check your internet connection.",
-    "apiKeyMissing": "API key not configured",
-    "apiKeyInvalid": "Invalid API key",
-    "quotaExceeded": "API quota exceeded",
-    "fileUploadError": "Error uploading file",
-    "fileTooBig": "File is too large",
+    "general": "Something went wrong",
+    "networkError": "No internet",
+    "apiKeyMissing": "Missing API key",
+    "apiKeyInvalid": "Wrong API key",
+    "quotaExceeded": "Limit exceeded",
+    "fileUploadError": "File upload failed",
+    "fileTooBig": "File too big",
     "fileTypeNotSupported": "File type not supported",
-    "conversationNotFound": "Conversation not found",
-    "messageTooLong": "Message is too long",
-    "cannotDeleteLastConversation": "Cannot delete the last conversation",
-    "summaryGenerationFailed": "Error generating conversation summary"
+    "conversationNotFound": "Chat not found",
+    "messageTooLong": "Message too long",
+    "cannotDeleteLastConversation": "Can't delete last chat",
+    "summaryGenerationFailed": "Error making summary"
   },
   "success": {
-    "messageRegenerating": "Regenerating response...",
-    "messageCopied": "Message copied to clipboard",
-    "conversationRenamed": "Conversation renamed",
-    "conversationDeleted": "Conversation deleted",
-    "conversationDownloaded": "Conversation downloaded",
-    "fileUploaded": "File uploaded successfully",
-    "settingsSaved": "Settings saved",
-    "newConversationCreated": "New conversation started",
-    "personalityChanged": "Personality changed",
-    "summaryGenerated": "Conversation summary updated",
-    "searchEnabled": "Search enabled",
-    "searchDisabled": "Search disabled",
-    "fullscreenEnabled": "Fullscreen mode enabled",
-    "fullscreenDisabled": "Fullscreen mode disabled"
+    "messageRegenerating": "Retrying...",
+    "messageCopied": "Copied",
+    "conversationRenamed": "Renamed",
+    "conversationDeleted": "Deleted",
+    "conversationDownloaded": "Downloaded",
+    "fileUploaded": "File uploaded",
+    "settingsSaved": "Saved",
+    "newConversationCreated": "New chat",
+    "personalityChanged": "Mode changed",
+    "summaryGenerated": "Summary created",
+    "searchEnabled": "Search on",
+    "searchDisabled": "Search off",
+    "fullscreenEnabled": "Fullscreen on",
+    "fullscreenDisabled": "Fullscreen off"
   },
   "actions": {
     "send": "Send",
@@ -115,50 +116,50 @@
     "refresh": "Refresh"
   },
   "confirmations": {
-    "deleteConversation": "Are you sure you want to delete this conversation?",
-    "deleteMessage": "Are you sure you want to delete this message?",
-    "clearAllConversations": "Are you sure you want to delete all conversations?",
-    "resetSettings": "Are you sure you want to reset settings?"
+    "deleteConversation": "Delete this chat?",
+    "deleteMessage": "Delete message?",
+    "clearAllConversations": "Delete all chats?",
+    "resetSettings": "Reset settings?"
   },
   "file": {
-    "selectFile": "Select file",
+    "selectFile": "Choose file",
     "dropFileHere": "Drop file here",
-    "supportedFormats": "Supported formats: {{formats}}",
-    "maxFileSize": "Maximum size: {{size}}",
-    "processing": "Processing file...",
-    "analyzing": "Analyzing content...",
-    "ready": "File ready for analysis"
+    "supportedFormats": "Formats: {{formats}}",
+    "maxFileSize": "Max: {{size}}",
+    "processing": "Processing...",
+    "analyzing": "Analyzing...",
+    "ready": "Ready"
   },
   "accessibility": {
     "openSidebar": "Open sidebar",
     "closeSidebar": "Close sidebar",
-    "scrollToBottom": "Scroll to bottom of conversation",
-    "focusInput": "Focus text input",
+    "scrollToBottom": "Go to bottom",
+    "focusInput": "Focus input",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "selectPersonality": "Select AI personality"
+    "selectPersonality": "Choose mode"
   },
   "time": {
     "now": "now",
-    "minuteAgo": "a minute ago",
-    "minutesAgo": "{{count}} minutes ago",
-    "hourAgo": "an hour ago",
-    "hoursAgo": "{{count}} hours ago",
-    "dayAgo": "a day ago",
+    "minuteAgo": "1 min ago",
+    "minutesAgo": "{{count}} min ago",
+    "hourAgo": "1h ago",
+    "hoursAgo": "{{count}}h ago",
+    "dayAgo": "yesterday",
     "daysAgo": "{{count}} days ago",
-    "weekAgo": "a week ago",
+    "weekAgo": "1 week ago",
     "weeksAgo": "{{count}} weeks ago",
-    "monthAgo": "a month ago",
+    "monthAgo": "1 month ago",
     "monthsAgo": "{{count}} months ago",
-    "yearAgo": "a year ago",
+    "yearAgo": "1 year ago",
     "yearsAgo": "{{count}} years ago"
   },
   "search": {
-    "placeholder": "Search conversations...",
-    "noResults": "No results found for '{{query}}'",
-    "resultsFound": "{{count}} result(s) found",
+    "placeholder": "Search...",
+    "noResults": "No results for '{{query}}'",
+    "resultsFound": "{{count}} result(s)",
     "searchInProgress": "Searching...",
-    "clearSearch": "Clear search"
+    "clearSearch": "Clear"
   },
   "settings": {
     "language": "Language",
@@ -168,17 +169,17 @@
     "about": "About",
     "version": "Version",
     "clearData": "Clear data",
-    "exportData": "Export data",
-    "importData": "Import data"
+    "exportData": "Export",
+    "importData": "Import"
   },
   "features": {
-    "dualPersonality": "Dual AI Personality",
-    "multimodalAnalysis": "Multimodal Analysis",
-    "realTimeResponses": "Real-Time Responses",
-    "conversationMemory": "Conversation Memory",
-    "internetSearch": "Internet Search",
-    "fileAnalysis": "File Analysis",
-    "codeGeneration": "Code Generation",
-    "languageSupport": "Multi-language Support"
+    "dualPersonality": "Two AI modes",
+    "multimodalAnalysis": "File analysis",
+    "realTimeResponses": "Fast responses",
+    "conversationMemory": "Chat memory",
+    "internetSearch": "Web search",
+    "fileAnalysis": "File analysis",
+    "codeGeneration": "Code generation",
+    "languageSupport": "Multi language"
   }
 }

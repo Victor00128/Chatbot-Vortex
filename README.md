@@ -1,73 +1,65 @@
+# Vortex Chat
+
+Un chat con IA que hice usando React. Tiene dos modelos diferentes y funciona bastante bien.
+
+## Qué hace
+
+- Chat con Gemini (rápido) y GPT-4 (para código)
+- Puedes subir imágenes y PDFs
+- Guarda el historial en el navegador
+- Respuestas en streaming
+- Memoria a corto plazo (recuerda conversaciones anteriores)
+
+## Como instalarlo
+
+Necesitas Node.js instalado.
+
+```bash
+git clone https://github.com/Victor00128/Chatbot-Vortex.git
+cd Chatbot-Vortex
+npm install
 ```
-██╗   ██╗ ██████╗ ██████╗ ████████╗███████╗██╗  ██╗
-██║   ██║██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝╚██╗██╔╝
-██║   ██║██║   ██║██████╔╝   ██║   █████╗   ╚███╔╝
-╚██╗ ██╔╝██║   ██║██╔══██╗   ██║   ██╔══╝   ██╔██╗
- ╚████╔╝ ╚██████╔╝██║  ██║   ██║   ███████╗██╔╝ ██╗
-  ╚═══╝   ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝
+
+Crea un archivo `.env.local` con tus API keys:
+
+```
+VITE_GEMINI_API_KEY=tu_key_aqui
+VITE_OPENAI_API_KEY=tu_key_aqui
+VITE_SUPABASE_URL=tu_supabase_url
+VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
 ```
 
+Consigue las keys en:
+- Gemini: https://aistudio.google.com/app/apikey
+- OpenAI: https://platform.openai.com/api-keys
+- Supabase: https://supabase.com/dashboard (crea proyecto y ve a Settings > API)
 
-## ✨ Lo que hace Vortex-IA
+Ejecuta:
 
--   **Doble Potencia de IA**: Conversaciones fluidas con dos personalidades distintas. El **Modelo Flash** usa Gemini 1.5 Flash para respuestas rápidas, mientras que el **Modelo Desarrollador** utiliza GPT-4o-mini de OpenAI para análisis de código en profundidad.
--   **Análisis Multimodal**: Sube imágenes (JPG, PNG) y documentos PDF, y Vortex-IA los analizará para responder preguntas específicas sobre su contenido.
--   **Respuestas en Tiempo Real**: Gracias al streaming, las respuestas de la IA aparecen al instante, sin esperas.
--   **Personalidades a tu Gusto**: Cambia fácilmente entre el asistente rápido (Gemini) y el experto en código (OpenAI) según tus necesidades.
--   **Historial Organizado**: Todas tus conversaciones se guardan en tu navegador para que puedas revisarlas o retomarlas cuando quieras.
+```bash
+npm run dev
+```
 
-## 🚀 Ponlo en Marcha
+Abre http://localhost:5173
 
-Sigue estos pasos para tener Vortex-IA funcionando en tu propia máquina.
+## Tecnologías
 
-### 📋 Requisitos Previos
+- React + TypeScript + Vite
+- Zustand para state management
+- React Markdown para mostrar respuestas
+- APIs de Google Gemini y OpenAI
 
--   [Node.js](https://nodejs.org/) (versión 18 o superior).
--   `npm` (viene incluido con Node.js).
--   Una clave de API de **Google Gemini** (consíguela gratis en [Google AI Studio](https://aistudio.google.com/app/apikey)).
--   Una clave de API de **OpenAI** (consíguela en [OpenAI Platform](https://platform.openai.com/api-keys)).
+## Memoria del Chatbot
 
-### ⚙️ Guía de Instalación
+Si configuras Supabase, el chatbot recordará tus conversaciones anteriores automáticamente. Usa las últimas 3 interacciones como contexto para respuestas más coherentes.
 
-1.  **Clona o Descarga el Repositorio:**
-    Abre tu terminal y clona el proyecto con este comando:
-    ```bash
-    git clone https://github.com/Victor00128/Chatbot-Vortex.git
-    ```
-    Luego, navega a la carpeta del proyecto:
-    ```bash
-    cd Chatbot-Vortex
-    ```
+Sin Supabase = solo memoria de la sesión actual
+Con Supabase = memoria entre sesiones
 
-2.  **Instala las Dependencias:**
-    Ejecuta este comando para descargar todas las librerías necesarias.
-    ```bash
-    npm install
-    ```
+## Notas
 
-3.  **Configura tus Claves de API:**
-    Crea una copia del archivo de ejemplo `.env.local.example` y renómbrala a `.env.local`.
-    ```bash
-    # En Windows (cmd):
-    copy .env.local.example .env.local
+- El historial se guarda en tu navegador + Supabase (opcional)
+- Necesitas internet para que funcione
+- Las API keys van en .env.local (no las subas a git)
 
-    # En Linux/Mac:
-    cp .env.local.example .env.local
-    ```
-    Ahora, abre el nuevo archivo `.env.local` y pega tus claves de API. **Este paso es fundamental.**
-    ```dotenv
-    # Clave de API para el "Modelo Flash" (Gemini)
-    VITE_GEMINI_API_KEY=TU_CLAVE_DE_API_DE_GEMINI
-
-    # Clave de API para el "Modelo Desarrollador" (OpenAI)
-    VITE_OPENAI_API_KEY=TU_CLAVE_DE_API_DE_OPENAI
-    ```
-
-4.  **¡Inicia la Aplicación!**
-    Ejecuta el siguiente comando para poner en marcha el servidor de desarrollo.
-    ```bash
-    npm run dev
-    ```
-
-5.  **Abre tu Navegador:**
-    Ve a la dirección `http://localhost:5173/`. ¡Ya está todo listo para usar Vortex-IA
+Eso es todo. Si algo no funciona, revisa que las keys estén bien.
