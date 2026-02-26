@@ -1,3 +1,5 @@
+// Hook principal del chat — aqui vive toda la logica de sesiones y mensajes
+// TODO: revisar la latencia de respuesta AI en conexiones lentas (a veces tarda mucho)
 import { useState, useCallback, useRef } from 'react';
 import type { ChatState, Conversation, Message, FileAttachment, AISettings } from '../types';
 import { generateBotResponse, generateTitle } from '../utils/chat';
@@ -30,6 +32,7 @@ function save(convs: Conversation[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitize(convs))); } catch { /* */ }
 }
 
+// generador de IDs unicos — suficiente para nuestro caso, no necesitamos UUID completo
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
@@ -110,11 +113,12 @@ export function useChat() {
     return generateBotResponse(text, attachments);
   }, [aiSettings]);
 
-  // enviar mensaje
+  // enviar mensaje al chat activo (o crear uno nuevo si no hay ninguno)
   const sendMessage = useCallback(async (content: string, attachments?: FileAttachment[]) => {
     const hasText = content.trim().length > 0;
     const hasFiles = attachments && attachments.length > 0;
     if ((!hasText && !hasFiles) || state.isLoading) return;
+    // console.log('[sendMessage] enviando:', content.substring(0, 50), '| archivos:', attachments?.length ?? 0);
 
     const userMsg: Message = {
       id: uid(), role: 'user', content: content.trim(),
@@ -159,6 +163,8 @@ export function useChat() {
 
     try {
       const resp = await getBotResponse(content.trim(), history, attachments);
+      // TODO: revisar la latencia de la respuesta AI para la version final
+      // console.log('[sendMessage] respuesta recibida, largo:', resp.length);
       const botMsg: Message = { id: uid(), role: 'assistant', content: resp, timestamp: Date.now() };
 
       setState(prev => {
@@ -243,6 +249,7 @@ export function useChat() {
     });
   }, [state.activeConversationId, persist]);
 
+  // TODO: en mobile el sidebar a veces no cierra bien con el swipe, hay que agregar gesture handler
   const toggleSidebar = useCallback(() => {
     setState(p => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   }, []);

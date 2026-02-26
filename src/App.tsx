@@ -1,3 +1,5 @@
+// App principal — punto de entrada de la UI
+// Julio: si tocas este archivo revisa que el sidebar no rompa el layout en movil
 import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatArea } from './components/ChatArea';
@@ -23,7 +25,9 @@ export function App() {
     updateAiSettings,
   } = useChat();
 
+  // TODO: considerar mover showSettings al hook useChat para no tener estado suelto aqui
   const [showSettings, setShowSettings] = useState(false);
+  // console.log('[App] activeConversationId:', activeConversationId, '| isLoading:', isLoading);
 
   return (
     <div className="relative flex h-[100dvh] w-screen overflow-hidden bg-[#0a0a0a] scanline-overlay">
@@ -51,7 +55,8 @@ export function App() {
         aiSettings={aiSettings}
       />
 
-      {/* Settings Modal */}
+      {/* Modal de ajustes — se abre desde el Header */}
+      {/* TODO: animacion de entrada/salida del modal, por ahora aparece de golpe */}
       {showSettings && (
         <SettingsModal
           settings={aiSettings}
