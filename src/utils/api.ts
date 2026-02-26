@@ -1,3 +1,5 @@
+// Modulo de conexion con APIs de IA (Gemini, Groq, OpenAI, etc.)
+// TODO: la lista de modelos de Gemini crece rapido, habria que moverla a un archivo de config separado
 // conexion con APIs de IA
 import type { AIProvider, AIProviderConfig, AISettings, FileAttachment } from '../types';
 import { getEnhancedSystemPrompt, getOptimalParameters } from './prompts';
@@ -220,7 +222,7 @@ function buildMessages(
 ): ChatMsg[] {
   const msgs: ChatMsg[] = [{ role: 'system', content: systemPrompt }];
 
-  // ultimos 20 mensajes como contexto
+  // ultimos 20 mensajes como contexto — mas de eso y la API cobra un ojo de la cara
   for (const m of history.slice(-20)) {
     msgs.push({ role: m.role, content: m.content });
   }
@@ -334,6 +336,7 @@ export async function sendToAI(
   const tokens = settings.maxTokens !== 4096 ? settings.maxTokens : params.maxTokens;
 
   const msgs = buildMessages(finalPrompt, userMessage, history, attachments);
+  // console.log('[sendToAI] proveedor:', settings.provider, '| modelo:', settings.model, '| tokens max:', tokens);
 
   if (settings.provider === 'gemini') {
     return callGemini(provider.baseUrl, settings.apiKey, settings.model, msgs, temp, tokens);

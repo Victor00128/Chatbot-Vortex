@@ -1,3 +1,5 @@
+// Sidebar de sesiones — muestra el historial de conversaciones
+// Nota: el overlay negro de fondo me costó bastante, no tocar sin revisar el z-index
 import { useState, useCallback } from 'react';
 import { MessageSquarePlus, Trash2, Terminal, X, Eraser, Skull, AlertTriangle } from 'lucide-react';
 import type { Conversation } from '../types';
@@ -13,6 +15,8 @@ interface SidebarProps {
   onClearAll: () => void;
 }
 
+// formatea la fecha relativa de la sesion (eg: "hace 2h")
+// solucion temporal para el formato de fecha, arreglar con dayjs o similar luego
 function formatDate(ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
@@ -98,6 +102,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [clearAll, setClearAll] = useState(false);
+  // console.log('[Sidebar] sesiones cargadas:', conversations.length, '| activa:', activeId);
 
   const confirmDelete = useCallback(() => {
     if (deleteId) {
