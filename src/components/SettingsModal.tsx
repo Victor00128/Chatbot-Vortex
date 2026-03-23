@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   X, Zap, Key, Cpu, Thermometer, MessageSquare,
   ExternalLink, CheckCircle2, XCircle, Loader2,
-  ChevronDown, RotateCcw, Shield, Globe, Search, AlertTriangle,
+  ChevronDown, RotateCcw, Shield, Globe, Search, AlertTriangle, FileJson, FileText,
 } from 'lucide-react';
 import type { AISettings, AIProvider } from '../types';
 import {
@@ -16,9 +16,19 @@ interface SettingsModalProps {
   settings: AISettings;
   onSave: (settings: AISettings) => void;
   onClose: () => void;
+  onExportJson: () => void;
+  onExportMarkdown: () => void;
+  hasConversations: boolean;
 }
 
-export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps) {
+export function SettingsModal({
+  settings,
+  onSave,
+  onClose,
+  onExportJson,
+  onExportMarkdown,
+  hasConversations,
+}: SettingsModalProps) {
   const [local, setLocal] = useState<AISettings>({ ...settings });
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string; latency?: number } | null>(null);
@@ -39,8 +49,15 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   // Auto-detect models when Gemini is selected and there's an API key
   useEffect(() => {
@@ -117,38 +134,43 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
     updateField('systemPrompt', DEFAULT_SYSTEM_PROMPT);
   }, [updateField]);
 
-  // Models to show in dropdown: detected models (if available) or fallback to static list
   const modelsToShow = (local.provider === 'gemini' && detectedModels && detectedModels.length > 0)
     ? detectedModels.map((m) => ({ id: m.id, name: m.name, description: m.description }))
     : providerConfig.models;
+  const isBrowserDirect = local.provider !== 'offline';
+  const isConfigured = isBrowserDirect && local.apiKey.trim().length > 0;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-xl border border-[#00ff4122] bg-[#0a0e14] shadow-2xl shadow-[#00ff4110] scrollbar-vortex">
-        {/* Header */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-modal-title"
+        aria-describedby="settings-modal-description"
+        className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-xl border border-[#00ff4122] bg-[#0a0e14] shadow-2xl shadow-[#00ff4110] scrollbar-vortex"
+      >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#00ff4118] bg-[#0a0e14]/95 backdrop-blur-xl px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#00cc33] to-[#009922]">
               <Cpu size={14} className="text-black" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[#00ff41] tracking-wider">
-                CONFIGURACIÓN IA
+              <h2 id="settings-modal-title" className="text-sm font-bold text-[#00ff41] tracking-wider">
+                CONFIGURACIÓN
               </h2>
               <p className="text-[9px] font-mono text-[#00ff4144] tracking-wider">
-                AJUSTES
+                CHAT Y PROVEEDORES
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar configuracion"
             className="rounded-lg p-1.5 text-[#00ff4155] hover:bg-[#00ff4115] hover:text-[#00ff41] transition-all"
           >
             <X size={18} />
@@ -156,11 +178,42 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
         </div>
 
         <div className="p-4 sm:p-5 space-y-5">
-          {/* ═══ PROVIDER SELECTION ═══ */}
+          <section className={`rounded-xl border p-3 ${
+            isBrowserDirect
+              ? 'border-[#ffaa0022] bg-[#ffaa0008]'
+              : 'border-[#00ff4122] bg-[#00ff4108]'
+          }`}>
+            <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#00ff41aa]">
+              <Shield size={12} />
+              Modo de uso
+            </div>
+            <p id="settings-modal-description" className="text-[11px] leading-relaxed text-[#c0c0c0]">
+              {isBrowserDirect
+                ? 'Esta versión usa tu API key directamente desde el navegador. Es práctica para demos, pruebas y uso personal.'
+                : 'Modo local listo para probar la interfaz y analizar archivos sin configurar ningún proveedor externo.'}
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg border border-[#00ff4118] bg-[#0d1117] px-3 py-2">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-[#00ff4144]">Modo</p>
+                <p className="mt-1 text-xs font-semibold text-white">
+                  {isBrowserDirect ? 'Con API propia' : 'Local'}
+                </p>
+              </div>
+              <div className="rounded-lg border border-[#00ff4118] bg-[#0d1117] px-3 py-2">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-[#00ff4144]">Estado</p>
+                <p className={`mt-1 text-xs font-semibold ${isConfigured || !isBrowserDirect ? 'text-[#8fffb0]' : 'text-[#ffd27a]'}`}>
+                  {isBrowserDirect
+                    ? (isConfigured ? 'Proveedor listo para probar' : 'Falta agregar una API key')
+                    : 'Listo para modo local'}
+                </p>
+              </div>
+            </div>
+          </section>
+
           <section>
             <label className="flex items-center gap-2 mb-2.5 text-[10px] sm:text-xs font-bold text-[#00ff41aa] tracking-wider uppercase">
               <Globe size={12} />
-              PROVEEDOR DE IA
+              PROVEEDOR
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {AI_PROVIDERS.map((p) => (
@@ -191,7 +244,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
             </div>
           </section>
 
-          {/* ═══ API KEY ═══ */}
           {local.provider !== 'offline' && (
             <section>
               <label className="flex items-center gap-2 mb-2 text-[10px] sm:text-xs font-bold text-[#00ff41aa] tracking-wider uppercase">
@@ -204,7 +256,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
                   value={local.apiKey}
                   onChange={(e) => {
                     updateField('apiKey', e.target.value);
-                    // Reset detected models when key changes
                     if (local.provider === 'gemini') {
                       setDetectedModels(null);
                       setDetectError(null);
@@ -241,7 +292,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
             </section>
           )}
 
-          {/* ═══ MODEL SELECTION ═══ */}
           {local.provider !== 'offline' && (
             <section>
               <div className="flex items-center justify-between mb-2">
@@ -250,7 +300,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
                   MODELO
                 </label>
 
-                {/* Auto-detect button for Gemini */}
                 {local.provider === 'gemini' && (
                   <button
                     onClick={handleDetectModels}
@@ -272,7 +321,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
                 )}
               </div>
 
-              {/* Detection status */}
               {local.provider === 'gemini' && detectError && (
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-[#ff904022] bg-[#ff904008] p-2 text-[9px] font-mono text-[#ff9040aa] animate-fade-in">
                   <AlertTriangle size={12} className="shrink-0" />
@@ -289,7 +337,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
                 </div>
               )}
 
-              {/* Model dropdown */}
               <div className="relative">
                 <select
                   value={local.model}
@@ -305,14 +352,12 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
                 <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#00ff4144] pointer-events-none" />
               </div>
 
-              {/* Current selected model ID */}
               <p className="mt-1.5 text-[8px] font-mono text-[#00ff4133] tracking-wider break-all">
-                MODEL_ID: {local.model}
+                ID del modelo: {local.model}
               </p>
             </section>
           )}
 
-          {/* ═══ TEMPERATURE ═══ */}
           <section>
             <label className="flex items-center justify-between mb-2">
               <span className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-[#00ff41aa] tracking-wider uppercase">
@@ -337,7 +382,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
             </div>
           </section>
 
-          {/* ═══ MAX TOKENS ═══ */}
           <section>
             <label className="flex items-center justify-between mb-2">
               <span className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-[#00ff41aa] tracking-wider uppercase">
@@ -362,7 +406,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
             </div>
           </section>
 
-          {/* ═══ SYSTEM PROMPT ═══ */}
           <section>
             <button
               onClick={() => setShowSystemPrompt(!showSystemPrompt)}
@@ -370,7 +413,7 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
             >
               <span className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-[#00ff41aa] tracking-wider uppercase group-hover:text-[#00ff41] transition-colors">
                 <MessageSquare size={12} />
-                SYSTEM PROMPT
+                PROMPT DEL SISTEMA
               </span>
               <ChevronDown
                 size={14}
@@ -378,9 +421,8 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
               />
             </button>
 
-            {/* nota sobre el prompt */}
             <p className="mb-2 text-[8px] sm:text-[9px] font-mono text-[#00ff4144] leading-relaxed">
-              El prompt se ajusta segun el tipo de pregunta. Solo modificalo si quieres un comportamiento distinto.
+              El prompt base se ajusta según el tipo de consulta. Cámbialo solo si necesitas un comportamiento específico.
             </p>
 
             {showSystemPrompt && (
@@ -409,7 +451,6 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
             )}
           </section>
 
-          {/* ═══ TEST CONNECTION ═══ */}
           <section className="rounded-lg border border-[#00ff4118] bg-[#0d1117] p-3">
             <button
               onClick={handleTest}
@@ -454,7 +495,36 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
             )}
           </section>
 
-          {/* ═══ SAVE BUTTON ═══ */}
+          {hasConversations && (
+            <section className="rounded-lg border border-[#00ff4118] bg-[#0d1117] p-3">
+              <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#00ff41aa]">
+                <Shield size={12} />
+                Exportación
+              </div>
+              <p className="mb-3 text-[10px] leading-relaxed text-[#888]">
+                Exporta tus conversaciones para respaldo, migración o revisión fuera del navegador.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={onExportJson}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-[#00d4ff22] bg-[#00d4ff08] px-3 py-2 text-[10px] font-bold tracking-wider text-[#85daff] transition-all hover:bg-[#00d4ff15]"
+                >
+                  <FileJson size={12} />
+                  EXPORTAR JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={onExportMarkdown}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-[#00ff4122] bg-[#00ff4108] px-3 py-2 text-[10px] font-bold tracking-wider text-[#8fffb0] transition-all hover:bg-[#00ff4115]"
+                >
+                  <FileText size={12} />
+                  EXPORTAR MD
+                </button>
+              </div>
+            </section>
+          )}
+
           <div className="flex gap-2 pt-2">
             <button
               onClick={onClose}
@@ -466,7 +536,7 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
               onClick={handleSave}
               className="flex-1 rounded-lg bg-gradient-to-r from-[#00cc33] to-[#009922] px-4 py-2.5 text-xs font-bold text-black tracking-wider shadow-lg shadow-[#00ff4133] hover:shadow-[#00ff4155] transition-all active:scale-[0.98]"
             >
-              GUARDAR CONFIGURACIÓN
+              GUARDAR CAMBIOS
             </button>
           </div>
         </div>

@@ -19,7 +19,6 @@ function formatTime(timestamp: number): string {
   });
 }
 
-/* ─── Code Block with Copy Button ─── */
 function CodeBlock({ lang, code }: { lang: string; code: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -40,12 +39,14 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
         </div>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 sm:px-2 text-[10px] sm:text-xs text-[#00ff4188] transition-all hover:bg-[#00ff4115] hover:text-[#00ff41]"
+          type="button"
+          aria-label={`Copiar bloque de código ${lang || 'sin lenguaje'}`}
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-[#00ff4188] transition-all hover:bg-[#00ff4115] hover:text-[#00ff41] sm:px-2 sm:text-xs"
         >
           {copied ? (
             <>
               <Check size={10} className="text-[#00ff41]" />
-              <span className="text-[#00ff41] hidden xs:inline">Copiado!</span>
+              <span className="text-[#00ff41] hidden xs:inline">Copiado</span>
             </>
           ) : (
             <>
@@ -62,54 +63,28 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
   );
 }
 
-/* ─── Clean text: strip any leftover Markdown symbols ─── */
 function cleanMarkdown(text: string): string {
   let cleaned = text;
 
-  // Remove heading markers: lines starting with # ## ### etc.
   cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
-
-  // Remove bold markers: **text** → text
   cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, '$1');
-
-  // Remove bold markers: __text__ → text
   cleaned = cleaned.replace(/__(.+?)__/g, '$1');
-
-  // Remove italic markers: *text* → text (but not inside words like don't)
   cleaned = cleaned.replace(/(?<!\w)\*(.+?)\*(?!\w)/g, '$1');
-
-  // Remove italic markers: _text_ → text
   cleaned = cleaned.replace(/(?<!\w)_(.+?)_(?!\w)/g, '$1');
-
-  // Remove strikethrough: ~~text~~ → text
   cleaned = cleaned.replace(/~~(.+?)~~/g, '$1');
-
-  // Remove blockquote markers: > text → text
   cleaned = cleaned.replace(/^>\s+/gm, '');
-
-  // Remove bullet list markers: - item or * item → item
   cleaned = cleaned.replace(/^[\s]*[-*]\s+/gm, '  ');
-
-  // Remove horizontal rules: --- or *** or ___
   cleaned = cleaned.replace(/^[-*_]{3,}\s*$/gm, '');
-
-  // Remove link syntax: [text](url) → text (url)
   cleaned = cleaned.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
-
-  // Remove image syntax: ![alt](url) → (imagen: alt)
   cleaned = cleaned.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '(imagen: $1)');
-
-  // Remove table pipe syntax: |col1|col2| → col1  col2
   cleaned = cleaned.replace(/^\|(.+)\|\s*$/gm, (_, row) => {
     return row.split('|').map((c: string) => c.trim()).filter((c: string) => !/^[-:]+$/.test(c)).join('    ');
   });
-  // Remove separator rows like |---|---|
   cleaned = cleaned.replace(/^\|[-:\s|]+\|\s*$/gm, '');
 
   return cleaned;
 }
 
-/* ─── Render inline code (backtick) within plain text ─── */
 function renderInlineCode(text: string): React.ReactNode[] {
   const parts = text.split(/(`[^`]+`)/g);
   return parts.map((part, i) => {
@@ -127,13 +102,10 @@ function renderInlineCode(text: string): React.ReactNode[] {
   });
 }
 
-/* ─── Main content renderer: plain text + code blocks only ─── */
 function renderContent(content: string) {
-  // Split by code blocks (``` ... ```)
   const parts = content.split(/(```[\s\S]*?```)/g);
 
   return parts.map((part, i) => {
-    // Code blocks — the ONLY formatted element
     if (part.startsWith('```') && part.endsWith('```')) {
       const inner = part.slice(3, -3);
       const lines = inner.split('\n');
@@ -145,7 +117,6 @@ function renderContent(content: string) {
       return <CodeBlock key={i} lang={lang} code={code} />;
     }
 
-    // Everything else: clean any Markdown symbols and render as plain text
     const cleaned = cleanMarkdown(part);
 
     return (
@@ -161,7 +132,6 @@ function renderContent(content: string) {
   });
 }
 
-/* ─── Main Component ─── */
 export function MessageBubble({
   message,
   onRegenerate,
@@ -195,7 +165,6 @@ export function MessageBubble({
             : 'bg-[#00ff4105] border-l-2 border-[#00ff4122]'
         }`}
       >
-        {/* Avatar */}
         <div
           className={`flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg ${
             isUser
@@ -210,7 +179,6 @@ export function MessageBubble({
           )}
         </div>
 
-        {/* Content */}
         <div className="min-w-0 flex-1 overflow-hidden">
           <div className="mb-1 sm:mb-1.5 flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <span
@@ -218,14 +186,13 @@ export function MessageBubble({
                 isUser ? 'text-cyan-400' : 'text-[#00ff41]'
               }`}
             >
-              {isUser ? 'OPERADOR' : 'VORTEX'}
+              {isUser ? 'USUARIO' : 'VORTEX'}
             </span>
             <span className="text-[9px] sm:text-[10px] text-[#444] font-mono">
               {formatTime(message.timestamp)}
             </span>
           </div>
 
-          {/* File Attachments */}
           {message.attachments && message.attachments.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-1.5 sm:gap-2">
               {message.attachments.map((att) => (
@@ -238,10 +205,9 @@ export function MessageBubble({
             </div>
           )}
 
-          {/* Text content — PLAIN TEXT with inline code + code blocks */}
           {message.content && (
             <div
-              className={`whitespace-pre-wrap break-words text-xs sm:text-sm leading-relaxed ${
+              className={`whitespace-pre-wrap break-words text-xs leading-relaxed sm:text-sm ${
                 isUser ? 'text-[#b0b0b0]' : 'text-[#c0c0c0]'
               }`}
             >
@@ -249,14 +215,13 @@ export function MessageBubble({
             </div>
           )}
 
-          {/* ─── ACTION BUTTONS (Bot messages only) ─── */}
           {!isUser && (
-            <div className="mt-2 sm:mt-3 flex items-center gap-1 flex-wrap opacity-100 sm:opacity-0 transition-all duration-300 sm:group-hover:opacity-100">
-              {/* Copy */}
+            <div className="mt-2 flex flex-wrap items-center gap-1 opacity-100 transition-all duration-300 sm:mt-3 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1 sm:gap-1.5 rounded-md border border-[#00ff4118] bg-[#00ff4108] px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-[#00ff4188] transition-all hover:border-[#00ff4133] hover:bg-[#00ff4118] hover:text-[#00ff41]"
-                title="Copiar respuesta"
+                type="button"
+                aria-label="Copiar respuesta"
+                className="flex items-center gap-1 rounded-md border border-[#00ff4118] bg-[#00ff4108] px-2 py-0.5 text-[10px] font-medium text-[#00ff4188] transition-all hover:border-[#00ff4133] hover:bg-[#00ff4118] hover:text-[#00ff41] sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]"
               >
                 {copied ? (
                   <>
@@ -271,22 +236,22 @@ export function MessageBubble({
                 )}
               </button>
 
-              {/* Regenerate */}
               <button
                 onClick={handleRegenerate}
                 disabled={isLoading}
-                className="flex items-center gap-1 sm:gap-1.5 rounded-md border border-[#00d4ff18] bg-[#00d4ff08] px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-[#00d4ff88] transition-all hover:border-[#00d4ff33] hover:bg-[#00d4ff18] hover:text-[#00d4ff] disabled:opacity-30"
-                title="Regenerar respuesta"
+                type="button"
+                aria-label="Regenerar respuesta"
+                className="flex items-center gap-1 rounded-md border border-[#00d4ff18] bg-[#00d4ff08] px-2 py-0.5 text-[10px] font-medium text-[#00d4ff88] transition-all hover:border-[#00d4ff33] hover:bg-[#00d4ff18] hover:text-[#00d4ff] disabled:opacity-30 sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]"
               >
                 <RefreshCw size={10} />
                 <span className="hidden xs:inline">Regenerar</span>
               </button>
 
-              {/* Delete */}
               <button
                 onClick={handleDelete}
-                className="flex items-center gap-1 sm:gap-1.5 rounded-md border border-[#ff004018] bg-[#ff004008] px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-[#ff004088] transition-all hover:border-[#ff004033] hover:bg-[#ff004018] hover:text-[#ff0040]"
-                title="Eliminar respuesta"
+                type="button"
+                aria-label="Eliminar respuesta"
+                className="flex items-center gap-1 rounded-md border border-[#ff004018] bg-[#ff004008] px-2 py-0.5 text-[10px] font-medium text-[#ff004088] transition-all hover:border-[#ff004033] hover:bg-[#ff004018] hover:text-[#ff0040] sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]"
               >
                 <Trash2 size={10} />
                 <span className="hidden xs:inline">Borrar</span>
@@ -296,7 +261,6 @@ export function MessageBubble({
         </div>
       </div>
 
-      {/* Image Modal */}
       {modal && (
         <ImageModal
           src={modal.src}

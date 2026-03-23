@@ -1,6 +1,3 @@
-// Modulo de conexion con APIs de IA (Gemini, Groq, OpenAI, etc.)
-// TODO: la lista de modelos de Gemini crece rapido, habria que moverla a un archivo de config separado
-// conexion con APIs de IA
 import type { AIProvider, AIProviderConfig, AISettings, FileAttachment } from '../types';
 import { getEnhancedSystemPrompt, getOptimalParameters } from './prompts';
 
@@ -115,12 +112,13 @@ export const AI_PROVIDERS: AIProviderConfig[] = [
 ];
 
 export const DEFAULT_SYSTEM_PROMPT = 'VORTEX_DYNAMIC';
+export const DEFAULT_REQUEST_TIMEOUT_MS = 45000;
 
 export function getDefaultSettings(): AISettings {
   return {
-    provider: 'gemini',
-    apiKey: 'AIzaSyDTQQmXpVmUuDFvi4VFI6ds48XyjYZMTlU',
-    model: 'gemini-2.0-flash',
+    provider: 'offline',
+    apiKey: '',
+    model: 'built-in',
     temperature: 0.7,
     maxTokens: 4096,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -130,32 +128,44 @@ export function getDefaultSettings(): AISettings {
 export function loadSettings(): AISettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) {
-      const defaults = getDefaultSettings();
-      saveSettings(defaults);
-      return defaults;
-    }
-    const parsed = JSON.parse(raw);
-    if (parsed.provider === 'offline' && (!parsed.apiKey || parsed.apiKey === '')) {
-      const defaults = getDefaultSettings();
-      saveSettings(defaults);
-      return defaults;
-    }
-    return { ...getDefaultSettings(), ...parsed };
+    if (!raw) return getDefaultSettings();
+
+    const defaults = getDefaultSettings();
+    const parsed = JSON.parse(raw) as Partial<AISettings>;
+    const provider = parsed.provider ?? defaults.provider;
+    const providerConfig = getProviderConfig(provider);
+
+    return {
+      provider,
+      apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : defaults.apiKey,
+      model: typeof parsed.model === 'string' && parsed.model.trim()
+        ? parsed.model
+        : providerConfig.models[0]?.id || defaults.model,
+      temperature: typeof parsed.temperature === 'number' ? parsed.temperature : defaults.temperature,
+      maxTokens: typeof parsed.maxTokens === 'number' ? parsed.maxTokens : defaults.maxTokens,
+      systemPrompt: typeof parsed.systemPrompt === 'string' ? parsed.systemPrompt : defaults.systemPrompt,
+    };
   } catch {
     return getDefaultSettings();
   }
 }
 
-export function saveSettings(s: AISettings): void {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* */ }
+export function saveSettings(s: AISettings): { ok: boolean; error?: string } {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'No se pudo guardar la configuracion',
+    };
+  }
 }
 
 export function getProviderConfig(id: AIProvider): AIProviderConfig {
   return AI_PROVIDERS.find((p) => p.id === id) || AI_PROVIDERS[AI_PROVIDERS.length - 1];
 }
 
-// auto-detectar modelos disponibles en gemini
 export interface DetectedModel {
   id: string;
   name: string;
@@ -215,6 +225,53 @@ interface ChatMsg {
   content: string;
 }
 
+interface SendToAIOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+function createTimedSignal(timeoutMs: number, parentSignal?: AbortSignal): {
+  signal: AbortSignal;
+  cleanup: () => void;
+} {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    controller.abort(new DOMException('Tiempo de espera agotado', 'TimeoutError'));
+  }, timeoutMs);
+
+  const forwardAbort = () => {
+    controller.abort(parentSignal?.reason ?? new DOMException('Solicitud cancelada', 'AbortError'));
+  };
+
+  if (parentSignal) {
+    if (parentSignal.aborted) {
+      forwardAbort();
+    } else {
+      parentSignal.addEventListener('abort', forwardAbort, { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      window.clearTimeout(timeoutId);
+      parentSignal?.removeEventListener('abort', forwardAbort);
+    },
+  };
+}
+
+function normalizeRequestError(error: unknown, signal: AbortSignal): Error {
+  if (signal.aborted) {
+    const reason = signal.reason;
+    if (reason instanceof DOMException && reason.name === 'TimeoutError') {
+      return new Error('REQUEST_TIMEOUT');
+    }
+    return new Error('REQUEST_ABORTED');
+  }
+
+  return error instanceof Error ? error : new Error('REQUEST_FAILED');
+}
+
 function buildMessages(
   systemPrompt: string, userMessage: string,
   history: { role: 'user' | 'assistant'; content: string }[],
@@ -222,7 +279,6 @@ function buildMessages(
 ): ChatMsg[] {
   const msgs: ChatMsg[] = [{ role: 'system', content: systemPrompt }];
 
-  // ultimos 20 mensajes como contexto — mas de eso y la API cobra un ojo de la cara
   for (const m of history.slice(-20)) {
     msgs.push({ role: m.role, content: m.content });
   }
@@ -250,11 +306,12 @@ function fmtSize(bytes: number): string {
   return `${(bytes / 1048576).toFixed(1)} MB`;
 }
 
-// llamada a APIs compatibles con OpenAI
 async function callOpenAI(
   url: string, key: string, model: string,
   msgs: ChatMsg[], temp: number, maxTk: number, provider: AIProvider,
+  signal?: AbortSignal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 ): Promise<string> {
+  const request = createTimedSignal(timeoutMs, signal);
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${key}`,
@@ -264,59 +321,75 @@ async function callOpenAI(
     headers['X-Title'] = 'VORTEX';
   }
 
-  const res = await fetch(url, {
-    method: 'POST', headers,
-    body: JSON.stringify({ model, messages: msgs, temperature: temp, max_tokens: maxTk, stream: false }),
-  });
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      signal: request.signal,
+      body: JSON.stringify({ model, messages: msgs, temperature: temp, max_tokens: maxTk, stream: false }),
+    });
 
-  if (!res.ok) {
-    const body = await res.text();
-    let msg = `HTTP ${res.status}`;
-    try { msg = JSON.parse(body).error?.message || msg; } catch { /* */ }
-    throw new Error(msg);
+    if (!res.ok) {
+      const body = await res.text();
+      let msg = `HTTP ${res.status}`;
+      try { msg = JSON.parse(body).error?.message || msg; } catch { /* */ }
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || 'Sin respuesta.';
+  } catch (error) {
+    throw normalizeRequestError(error, request.signal);
+  } finally {
+    request.cleanup();
   }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || 'Sin respuesta.';
 }
 
-// llamada a Gemini
 async function callGemini(
   baseUrl: string, key: string, model: string,
   msgs: ChatMsg[], temp: number, maxTk: number,
+  signal?: AbortSignal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 ): Promise<string> {
+  const request = createTimedSignal(timeoutMs, signal);
   const sysText = msgs.find(m => m.role === 'system')?.content || '';
   const contents = msgs.filter(m => m.role !== 'system').map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
 
-  const res = await fetch(`${baseUrl}/models/${model}:generateContent?key=${key}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: sysText }] },
-      contents,
-      generationConfig: { temperature: temp, maxOutputTokens: maxTk, topP: 0.9, topK: 50 },
-    }),
-  });
+  try {
+    const res = await fetch(`${baseUrl}/models/${model}:generateContent?key=${key}`, {
+      method: 'POST',
+      signal: request.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: sysText }] },
+        contents,
+        generationConfig: { temperature: temp, maxOutputTokens: maxTk, topP: 0.9, topK: 50 },
+      }),
+    });
 
-  if (!res.ok) {
-    const body = await res.text();
-    let msg = `HTTP ${res.status}`;
-    try { msg = JSON.parse(body).error?.message || msg; } catch { /* */ }
-    throw new Error(msg);
+    if (!res.ok) {
+      const body = await res.text();
+      let msg = `HTTP ${res.status}`;
+      try { msg = JSON.parse(body).error?.message || msg; } catch { /* */ }
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
+  } catch (error) {
+    throw normalizeRequestError(error, request.signal);
+  } finally {
+    request.cleanup();
   }
-
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
 }
 
-// enviar mensaje al proveedor seleccionado
 export async function sendToAI(
   settings: AISettings, userMessage: string,
   history: { role: 'user' | 'assistant'; content: string }[],
   attachments?: FileAttachment[],
+  options?: SendToAIOptions,
 ): Promise<string> {
   if (settings.provider === 'offline') throw new Error('OFFLINE_MODE');
   if (!settings.apiKey.trim()) throw new Error('NO_API_KEY');
@@ -327,7 +400,6 @@ export async function sendToAI(
   const prompt = getEnhancedSystemPrompt(userMessage, ctx);
   const params = getOptimalParameters(userMessage);
 
-  // si hay prompt custom, usarlo
   const isCustom = settings.systemPrompt && settings.systemPrompt !== DEFAULT_SYSTEM_PROMPT
     && settings.systemPrompt !== 'VORTEX_DYNAMIC' && settings.systemPrompt.length > 50;
   const finalPrompt = isCustom ? settings.systemPrompt : prompt;
@@ -336,24 +408,49 @@ export async function sendToAI(
   const tokens = settings.maxTokens !== 4096 ? settings.maxTokens : params.maxTokens;
 
   const msgs = buildMessages(finalPrompt, userMessage, history, attachments);
-  // console.log('[sendToAI] proveedor:', settings.provider, '| modelo:', settings.model, '| tokens max:', tokens);
-
   if (settings.provider === 'gemini') {
-    return callGemini(provider.baseUrl, settings.apiKey, settings.model, msgs, temp, tokens);
+    return callGemini(
+      provider.baseUrl,
+      settings.apiKey,
+      settings.model,
+      msgs,
+      temp,
+      tokens,
+      options?.signal,
+      options?.timeoutMs,
+    );
   }
-  return callOpenAI(provider.baseUrl, settings.apiKey, settings.model, msgs, temp, tokens, settings.provider);
+  return callOpenAI(
+    provider.baseUrl,
+    settings.apiKey,
+    settings.model,
+    msgs,
+    temp,
+    tokens,
+    settings.provider,
+    options?.signal,
+    options?.timeoutMs,
+  );
 }
 
-// probar conexion
 export async function testConnection(settings: AISettings): Promise<{ ok: boolean; message: string; latency?: number }> {
   if (settings.provider === 'offline') return { ok: true, message: 'Modo offline activo.' };
   if (!settings.apiKey.trim()) return { ok: false, message: 'API Key vacia.' };
 
   const start = performance.now();
   try {
-    const resp = await sendToAI({ ...settings, maxTokens: 50 }, 'Responde solo: "Conexión OK."', []);
+    const resp = await sendToAI(
+      { ...settings, maxTokens: 50 },
+      'Responde solo: "Conexión OK."',
+      [],
+      undefined,
+      { timeoutMs: 15000 },
+    );
     return { ok: true, message: resp.substring(0, 100), latency: Math.round(performance.now() - start) };
   } catch (err) {
+    if (err instanceof Error && err.message === 'REQUEST_TIMEOUT') {
+      return { ok: false, message: 'La conexion tardó demasiado en responder.' };
+    }
     return { ok: false, message: err instanceof Error ? err.message : 'Error desconocido' };
   }
 }

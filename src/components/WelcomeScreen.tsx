@@ -9,7 +9,6 @@ interface WelcomeScreenProps {
   onOpenSettings: () => void;
 }
 
-// animacion de fondo tipo matrix
 function MatrixRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -92,7 +91,6 @@ function MatrixRain() {
   );
 }
 
-// particulas flotantes binarias
 function BinaryParticles() {
   const count = typeof window !== 'undefined' && window.innerWidth < 640 ? 15 : 30;
   const particles = Array.from({ length: count }, (_, i) => ({
@@ -126,7 +124,6 @@ function BinaryParticles() {
   );
 }
 
-// simbolos ascii flotantes
 function AsciiSymbols() {
   const symbols = ['{ }', '</>', '[ ]', '( )', '&&', '=>', '0x', '#!', 'NULL', 'void'];
 
@@ -169,7 +166,6 @@ function AsciiSymbols() {
   );
 }
 
-// anillos orbitales
 function OrbitalRings() {
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
@@ -190,7 +186,6 @@ function OrbitalRings() {
   );
 }
 
-// overlay crt
 function CRTOverlay() {
   return (
     <div
@@ -200,7 +195,6 @@ function CRTOverlay() {
   );
 }
 
-// linea de estado
 function StatusLine({ aiSettings }: { aiSettings: AISettings }) {
   const [time, setTime] = useState(new Date());
   const provider = getProviderConfig(aiSettings.provider);
@@ -224,15 +218,19 @@ function StatusLine({ aiSettings }: { aiSettings: AISettings }) {
       <span className="text-[#00ff4110]">|</span>
       <span className={isOnline ? 'text-[#00ff4125]' : 'text-[#ffaa0025]'}>
         <span className={`inline-block w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${isOnline ? 'bg-[#00ff41]' : 'bg-yellow-500'} opacity-40 mr-1 animate-pulse`} />
-        {isOnline ? `${provider.name.toUpperCase()} CONNECTED` : 'OFFLINE MODE'}
+        {isOnline ? `${provider.name.toUpperCase()} ACTIVO` : 'MODO LOCAL'}
       </span>
     </div>
   );
 }
 
-// componente principal
 export function WelcomeScreen({ onSuggestionClick, aiSettings, onOpenSettings }: WelcomeScreenProps) {
   const isOnline = aiSettings.provider !== 'offline' && aiSettings.apiKey.trim().length > 0;
+  const quickActions = [
+    'Resume este archivo y dime los puntos clave.',
+    'Explícame este error y su causa probable.',
+    'Compara estos modelos para un caso real de uso.',
+  ];
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden deep-matrix-bg select-none" style={{ minHeight: '100%' }}>
@@ -247,10 +245,9 @@ export function WelcomeScreen({ onSuggestionClick, aiSettings, onOpenSettings }:
         <div className="w-20 sm:w-32 h-px bg-gradient-to-r from-transparent via-[#00ff4133] to-transparent mb-4 sm:mb-8 opacity-0 animate-fade-in-slow stagger-1" />
 
         <p className="text-[8px] sm:text-[10px] md:text-[11px] font-mono tracking-[0.3em] sm:tracking-[0.5em] text-[#00ff4130] uppercase mb-2 sm:mb-4 opacity-0 animate-fade-in-slow stagger-2">
-          neural · engine · v2
+          chat · multiproveedor · local
         </p>
 
-        {/* titulo VORTEX */}
         <div className="relative vortex-glitch flex items-center justify-center">
           <h1
             className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-[0.2em] sm:tracking-[0.3em] text-[#00ff41] animate-glitch-heavy animate-flicker"
@@ -269,7 +266,6 @@ export function WelcomeScreen({ onSuggestionClick, aiSettings, onOpenSettings }:
           <div className="w-5 sm:w-8 h-px bg-[#00ff4122]" />
         </div>
 
-        {/* estado de IA */}
         <div className="mt-4 sm:mt-6 opacity-0 animate-fade-in-slow stagger-4">
           {isOnline ? (
             <div className="flex items-center gap-2 rounded-lg border border-[#00ff4122] bg-[#00ff4108] px-3 py-1.5">
@@ -288,15 +284,27 @@ export function WelcomeScreen({ onSuggestionClick, aiSettings, onOpenSettings }:
             >
               <Settings size={10} className="text-yellow-600 group-hover:animate-spin" />
               <span className="text-[8px] sm:text-[10px] font-mono text-yellow-600/60 tracking-wider group-hover:text-yellow-600/80">
-                CONFIGURAR IA
+                CONFIGURAR PROVEEDOR
               </span>
             </button>
           )}
         </div>
 
         <p className="mt-3 sm:mt-4 text-[8px] sm:text-[10px] md:text-xs font-mono tracking-[0.2em] sm:tracking-[0.3em] text-[#00ff4120] uppercase opacity-0 animate-fade-in-slow stagger-4">
-          awaiting input
+          listo para empezar
         </p>
+
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 opacity-0 animate-fade-in-slow stagger-5">
+          <span className="rounded-full border border-[#00ff4118] bg-[#00ff4108] px-2.5 py-1 text-[8px] font-mono tracking-[0.18em] text-[#00ff4160]">
+            MULTIPROVEEDOR
+          </span>
+          <span className="rounded-full border border-[#00d4ff18] bg-[#00d4ff08] px-2.5 py-1 text-[8px] font-mono tracking-[0.18em] text-[#00d4ff80]">
+            ARCHIVOS
+          </span>
+          <span className="rounded-full border border-[#ffaa0018] bg-[#ffaa0008] px-2.5 py-1 text-[8px] font-mono tracking-[0.18em] text-[#ffcc66]">
+            MODO LOCAL
+          </span>
+        </div>
 
         <div className="w-14 sm:w-20 h-px bg-gradient-to-r from-transparent via-[#00ff4120] to-transparent mt-4 sm:mt-8 opacity-0 animate-fade-in-slow stagger-5" />
 
@@ -306,16 +314,28 @@ export function WelcomeScreen({ onSuggestionClick, aiSettings, onOpenSettings }:
         >
           <div className="flex items-center gap-2 rounded-lg border border-[#00ff4110] px-3 py-1.5 sm:px-4 sm:py-2 transition-all duration-500 group-hover:border-[#00ff4133] group-hover:bg-[#00ff4108] group-hover:shadow-[0_0_30px_#00ff4110] active:scale-95">
             <span className="text-[8px] sm:text-[9px] font-mono tracking-[0.2em] sm:tracking-[0.3em] text-[#00ff4120] transition-colors group-hover:text-[#00ff4150]">
-              {'>'} INICIAR_SESION
+              {'>'} ABRIR_CONVERSACION
             </span>
             <span className="text-[#00ff4115] text-[9px] sm:text-[10px] animate-blink transition-colors group-hover:text-[#00ff4140]">_</span>
           </div>
         </button>
+
+        <div className="mt-5 grid w-full max-w-3xl gap-2 px-2 opacity-0 animate-fade-in-slow stagger-6 sm:grid-cols-3">
+          {quickActions.map((action) => (
+            <button
+              key={action}
+              type="button"
+              onClick={() => onSuggestionClick(action)}
+              className="rounded-xl border border-[#00ff4110] bg-[#081109]/70 px-3 py-3 text-left text-[10px] leading-relaxed text-[#8bcf95] transition-all hover:border-[#00ff4128] hover:bg-[#0b160d] hover:text-[#c8ffd2]"
+            >
+              {action}
+            </button>
+          ))}
+        </div>
       </div>
 
       <StatusLine aiSettings={aiSettings} />
 
-      {/* esquinas decorativas */}
       <div className="absolute top-3 left-3 sm:top-4 sm:left-4 text-[7px] sm:text-[8px] font-mono text-[#00ff4110] leading-relaxed opacity-0 animate-fade-in-slow stagger-2 hidden xs:block" style={{ zIndex: 5 }}>
         ┌──<br />
         │ 0x<br />

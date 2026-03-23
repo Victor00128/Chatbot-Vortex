@@ -1,85 +1,104 @@
-# Vortex Chatbot
+# Chatbot Vortex
 
-Interfaz de chat desarrollada para uso interno de Vortex. Permite conectarse a distintos proveedores de inteligencia artificial (Gemini, Groq, OpenAI, DeepSeek, etc.) desde una sola pantalla, sin tener que cambiar de herramienta cada vez.
+Chatbot Vortex es una interfaz de chat para trabajar con varios proveedores de IA desde un solo lugar. El proyecto permite probar la experiencia en modo local, conectar proveedores con API key propia y exportar conversaciones desde el navegador.
 
-La idea surgio porque estabamos cansados de abrir mil pestañas distintas dependiendo del modelo que quisieras usar. Con esto tenes todo en un solo lugar.
+## Qué ofrece
 
----
+- Múltiples proveedores en una sola UI: Gemini, Groq, OpenAI, DeepSeek, OpenRouter y modo local.
+- Historial persistente en el navegador con exportación a JSON y Markdown.
+- Adjuntos con análisis básico de imágenes, PDFs, ZIPs, código, CSV, JSON, audio y video.
+- Configuración de modelo, temperatura, tokens máximos y prompt del sistema.
+- Mejoras de accesibilidad: navegación por teclado, mejor foco visual, menos movimiento si el sistema pide `prefers-reduced-motion`.
+- Cancelación de respuesta en curso y avisos visibles de estado/error.
 
-## ¿Que hace exactamente?
+## Stack
 
-- Conecta con multiples proveedores de IA usando tu propia API key
-- Guarda el historial de conversaciones en el navegador (localStorage), no se pierde aunque recargues
-- Adjuntar archivos y que la IA los analice (texto, codigo, etc)
-- Modo oscuro por defecto (no hay modo claro, no lo necesitabamos)
-- Se puede configurar el modelo, temperatura y tokens maximos desde la UI
-- Diseño responsive, funciona en movil aunque esta mas optimizado para desktop
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS v4
+- Lucide React
 
----
+## Inicio rápido
 
-## Tecnologías usadas
+Requisitos:
 
-- **React 19** con TypeScript
-- **Vite** como bundler (rapido y sencillo de configurar)
-- **Tailwind CSS v4** para los estilos
-- **Lucide React** para los iconos
-- APIs compatibles con OpenAI (Groq, OpenRouter, DeepSeek) y la API nativa de Gemini
+- Node.js 18 o superior
 
----
-
-## Instalacion
-
-Necesitas tener Node.js instalado (version 18 o superior recomendada).
+Instalación:
 
 ```bash
-# Clonar el repo
-git clone https://github.com/tu-usuario/vortex-chatbot.git
-cd vortex-chatbot
-
-# Instalar dependencias
-npm install
-
-# Levantar el servidor de desarrollo
+git clone https://github.com/Victor00128/Chatbot-Vortex.git
+cd Chatbot-Vortex
+npm ci
 npm run dev
 ```
 
-Despues de eso se abre en `http://localhost:5173` (o el puerto que te indique la terminal).
-
-Para hacer el build de produccion:
+Build de producción:
 
 ```bash
 npm run build
 ```
 
----
+## Configuración
 
-## Configuracion
+La app arranca en `offline` por defecto. Eso evita exponer una clave preconfigurada y permite probar la interfaz sin tocar ninguna API.
 
-No hay archivo `.env` necesario. La API key se configura directamente desde la interfaz en el boton de ajustes (icono de engranaje). Podes cambiarla en cualquier momento sin recargar.
+Si quieres usar un proveedor real:
 
-Los proveedores gratuitos que funcionan sin pagar son **Groq** y **Gemini** (tienen tier gratuito con limites razonables).
+1. Abre el botón de ajustes.
+2. Elige proveedor.
+3. Pega tu API key.
+4. Guarda y prueba conexión.
 
----
+## Seguridad
 
-## Estructura del proyecto
+La versión actual funciona con API key propia. Cuando eliges un proveedor real, la clave se usa directamente desde el navegador.
 
-```
+Eso sirve para:
+
+- demos
+- uso personal
+- validación rápida del flujo
+
+No es suficiente para:
+
+- producto multiusuario
+- ventas a empresas
+- control real de cuotas, billing o abuse prevention
+
+Si el proyecto evoluciona a una versión comercial multiusuario, el siguiente paso lógico es montar un backend/proxy que:
+
+- reciba las peticiones del frontend
+- proteja las claves
+- aplique autenticación, rate limits y observabilidad
+- opcionalmente guarde historial fuera del navegador
+
+## Estructura
+
+```text
 src/
-├── components/      # Componentes de la UI (Sidebar, Chat, Modales, etc)
-├── hooks/           # useChat.ts con toda la logica del chat
-├── utils/           # Conexion con APIs, prompts, helpers
-├── types/           # Tipos TypeScript compartidos
-└── App.tsx          # Componente raiz
+├── components/
+├── hooks/
+├── types/
+├── utils/
+└── App.tsx
 ```
 
----
+## Estado actual
 
-## Notas
+Esta versión deja el proyecto en un estado mucho más sólido para demo, revisión técnica e iteración:
 
-- El historial se guarda solo en el navegador. Si limpiás el localStorage se borra todo.
-- Algunos modelos de Gemini todavia estan en preview y pueden cambiar sin aviso.
-- Si la respuesta de la IA tarda mucho, probablemente es el modelo, no el codigo (los modelos grandes a veces son lentos).
+- configuración segura por defecto
+- interfaz más consistente
+- exportación de datos
+- accesibilidad básica más sólida
+- manejo más claro de errores y tiempos de espera
 
----
+## Siguientes pasos recomendados
 
-Desarrollado por **Julio Cesar**
+1. Sacar las llamadas a proveedores del frontend y moverlas a un backend.
+2. Añadir autenticación de usuarios y planes.
+3. Guardar historial en base de datos o IndexedDB, no solo en `localStorage`.
+4. Incorporar analítica, rate limiting y panel administrativo.
+5. Preparar landing, pricing y una demo pública.

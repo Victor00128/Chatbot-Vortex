@@ -1,271 +1,574 @@
-// Hook principal del chat — aqui vive toda la logica de sesiones y mensajes
-// TODO: revisar la latencia de respuesta AI en conexiones lentas (a veces tarda mucho)
-import { useState, useCallback, useRef } from 'react';
-import type { ChatState, Conversation, Message, FileAttachment, AISettings } from '../types';
+import { useCallback, useRef, useState } from 'react';
+import type { AISettings, AppNotice, ChatState, Conversation, FileAttachment, Message } from '../types';
 import { generateBotResponse, generateTitle } from '../utils/chat';
-import { sendToAI, loadSettings, saveSettings } from '../utils/api';
+import { DEFAULT_REQUEST_TIMEOUT_MS, loadSettings, saveSettings, sendToAI } from '../utils/api';
 
 const STORAGE_KEY = 'vortex-conversations';
 
-// limpiar attachments pesados antes de guardar en localStorage
-function sanitize(convs: Conversation[]): Conversation[] {
-  return convs.map(c => ({
-    ...c,
-    messages: c.messages.filter(m => !m.deleted).map(m => ({
-      ...m,
-      attachments: m.attachments?.map(a => ({
-        ...a, preview: undefined,
-        content: a.content && a.content.length > 2000 ? a.content.substring(0, 2000) : a.content,
+function sanitize(conversations: Conversation[]): Conversation[] {
+  return conversations.map((conversation) => ({
+    ...conversation,
+    messages: conversation.messages
+      .filter((message) => !message.deleted)
+      .map((message) => ({
+        ...message,
+        attachments: message.attachments?.map((attachment) => ({
+          ...attachment,
+          preview: undefined,
+          content: attachment.content && attachment.content.length > 2000
+            ? attachment.content.substring(0, 2000)
+            : attachment.content,
+        })),
       })),
-    })),
   }));
 }
 
-function load(): Conversation[] {
+function loadConversations(): Conversation[] {
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    return s ? JSON.parse(s) : [];
-  } catch { return []; }
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
 }
 
-function save(convs: Conversation[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitize(convs))); } catch { /* */ }
+function saveConversations(conversations: Conversation[]): { ok: boolean; error?: string } {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitize(conversations)));
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'No se pudo guardar el historial',
+    };
+  }
 }
 
-// generador de IDs unicos — suficiente para nuestro caso, no necesitamos UUID completo
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
+function createNotice(level: AppNotice['level'], title: string, message: string): AppNotice {
+  return { id: uid(), level, title, message };
+}
+
+function exportJson(conversations: Conversation[]): string {
+  return JSON.stringify(
+    {
+      exportedAt: new Date().toISOString(),
+      conversationCount: conversations.length,
+      conversations,
+    },
+    null,
+    2,
+  );
+}
+
+function exportMarkdown(conversations: Conversation[]): string {
+  return conversations
+    .map((conversation) => {
+      const sections = [
+        `# ${conversation.title}`,
+        '',
+        `Creada: ${new Date(conversation.createdAt).toLocaleString('es-ES')}`,
+        `Actualizada: ${new Date(conversation.updatedAt).toLocaleString('es-ES')}`,
+        '',
+      ];
+
+      for (const message of conversation.messages.filter((item) => !item.deleted)) {
+        sections.push(`## ${message.role === 'user' ? 'Usuario' : 'VORTEX'}`);
+        sections.push(`Hora: ${new Date(message.timestamp).toLocaleString('es-ES')}`);
+
+        if (message.attachments?.length) {
+          sections.push('Adjuntos:');
+          for (const attachment of message.attachments) {
+            sections.push(`- ${attachment.name} (${attachment.type}, ${attachment.size} bytes)`);
+          }
+        }
+
+        sections.push('');
+        sections.push(message.content || '(sin texto)');
+        sections.push('');
+      }
+
+      return sections.join('\n');
+    })
+    .join('\n---\n\n');
+}
+
+function downloadFile(fileName: string, contents: string, mimeType: string) {
+  const blob = new Blob([contents], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function createExportName(extension: 'json' | 'md'): string {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `vortex-export-${stamp}.${extension}`;
+}
+
 export function useChat() {
   const [state, setState] = useState<ChatState>(() => {
-    const convs = load();
+    const conversations = loadConversations();
     return {
-      conversations: convs,
-      activeConversationId: convs.length > 0 ? convs[0].id : null,
+      conversations,
+      activeConversationId: conversations.length > 0 ? conversations[0].id : null,
       isLoading: false,
       sidebarOpen: false,
     };
   });
-
   const [aiSettings, setAiSettings] = useState<AISettings>(loadSettings);
+  const [notice, setNotice] = useState<AppNotice | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const active = state.conversations.find(c => c.id === state.activeConversationId) || null;
+  const activeConversation = state.conversations.find(
+    (conversation) => conversation.id === state.activeConversationId,
+  ) || null;
 
-  const persist = useCallback((convs: Conversation[]) => save(convs), []);
-
-  const updateAiSettings = useCallback((s: AISettings) => {
-    setAiSettings(s);
-    saveSettings(s);
+  const pushNotice = useCallback((level: AppNotice['level'], title: string, message: string) => {
+    setNotice(createNotice(level, title, message));
   }, []);
 
-  const createNewConversation = useCallback(() => {
-    const conv: Conversation = {
-      id: uid(), title: 'Nueva sesión', messages: [],
-      createdAt: Date.now(), updatedAt: Date.now(),
+  const dismissNotice = useCallback(() => {
+    setNotice(null);
+  }, []);
+
+  const persist = useCallback((conversations: Conversation[]) => {
+    const result = saveConversations(conversations);
+    if (!result.ok) {
+      pushNotice(
+        'warning',
+        'Historial no guardado',
+        'El navegador no pudo guardar todo el historial. Exporta tus conversaciones para evitar pérdidas.',
+      );
+    }
+  }, [pushNotice]);
+
+  const updateAiSettings = useCallback((settings: AISettings) => {
+    const normalized: AISettings = {
+      ...settings,
+      apiKey: settings.apiKey.trim(),
+      systemPrompt: settings.systemPrompt.trim() || 'VORTEX_DYNAMIC',
     };
-    setState(p => {
-      const next = { ...p, conversations: [conv, ...p.conversations], activeConversationId: conv.id };
-      persist(next.conversations);
-      return next;
+
+    setAiSettings(normalized);
+
+    const result = saveSettings(normalized);
+    if (!result.ok) {
+      pushNotice(
+        'warning',
+        'Configuración no guardada',
+        'No se pudo guardar la configuración en este navegador.',
+      );
+      return;
+    }
+
+    if (normalized.provider === 'offline' || !normalized.apiKey) {
+      pushNotice(
+        'success',
+        'Modo local listo',
+        'Puedes usar la interfaz y analizar archivos sin configurar ningún proveedor externo.',
+      );
+      return;
+    }
+
+    pushNotice(
+      'warning',
+      'Modo con API propia',
+      'La API key se usará desde este navegador. Para un producto multiusuario conviene mover esto a un backend.',
+    );
+  }, [pushNotice]);
+
+  const createNewConversation = useCallback(() => {
+      const conversation: Conversation = {
+      id: uid(),
+      title: 'Nueva conversación',
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    setState((previous) => {
+      const conversations = [conversation, ...previous.conversations];
+      persist(conversations);
+      return {
+        ...previous,
+        conversations,
+        activeConversationId: conversation.id,
+      };
     });
   }, [persist]);
 
   const selectConversation = useCallback((id: string) => {
-    setState(p => ({ ...p, activeConversationId: id }));
+    setState((previous) => ({ ...previous, activeConversationId: id }));
   }, []);
 
-  // borrar conversacion
   const deleteConversation = useCallback((id: string) => {
-    setState(prev => {
-      const filtered = prev.conversations.filter(c => c.id !== id);
-      let newActive = prev.activeConversationId;
-      if (prev.activeConversationId === id) {
-        newActive = filtered.length > 0 ? filtered[0].id : null;
-      }
-      const next = { ...prev, conversations: filtered, activeConversationId: newActive };
-      persist(filtered);
-      return next;
+    setState((previous) => {
+      const conversations = previous.conversations.filter((conversation) => conversation.id !== id);
+      const activeConversationId = previous.activeConversationId === id
+        ? conversations[0]?.id ?? null
+        : previous.activeConversationId;
+      persist(conversations);
+      return { ...previous, conversations, activeConversationId };
     });
   }, [persist]);
 
-  // obtener respuesta del bot (con API o fallback offline)
   const getBotResponse = useCallback(async (
     text: string,
     history: { role: 'user' | 'assistant'; content: string }[],
     attachments?: FileAttachment[],
+    signal?: AbortSignal,
   ): Promise<string> => {
     if (aiSettings.provider !== 'offline' && aiSettings.apiKey.trim()) {
       try {
-        return await sendToAI(aiSettings, text, history, attachments);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Error';
-        if (msg === 'OFFLINE_MODE' || msg === 'NO_API_KEY') {
+        return await sendToAI(
+          aiSettings,
+          text,
+          history,
+          attachments,
+          { signal, timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS },
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Error';
+
+        if (message === 'OFFLINE_MODE' || message === 'NO_API_KEY') {
           return generateBotResponse(text, attachments);
         }
-        // si falla la API, mostrar error + respuesta offline
-        // TODO: mejorar este mensaje de error, esta medio feo
+
+        if (message === 'REQUEST_ABORTED' || message === 'REQUEST_TIMEOUT') {
+          throw error;
+        }
+
         const fallback = generateBotResponse(text, attachments);
-        return `Error de conexion con ${aiSettings.provider}: ${msg}\n\nRespuesta offline:\n\n${fallback}`;
+        return `Error de conexión con ${aiSettings.provider}: ${message}\n\nRespuesta local:\n\n${fallback}`;
       }
     }
+
     return generateBotResponse(text, attachments);
   }, [aiSettings]);
 
-  // enviar mensaje al chat activo (o crear uno nuevo si no hay ninguno)
-  const sendMessage = useCallback(async (content: string, attachments?: FileAttachment[]) => {
-    const hasText = content.trim().length > 0;
-    const hasFiles = attachments && attachments.length > 0;
-    if ((!hasText && !hasFiles) || state.isLoading) return;
-    // console.log('[sendMessage] enviando:', content.substring(0, 50), '| archivos:', attachments?.length ?? 0);
+  const stopLoadingState = useCallback(() => {
+    setState((previous) => ({ ...previous, isLoading: false }));
+  }, []);
 
-    const userMsg: Message = {
-      id: uid(), role: 'user', content: content.trim(),
-      timestamp: Date.now(), attachments,
+  const cancelGeneration = useCallback(() => {
+    if (!abortRef.current) return;
+
+    abortRef.current.abort(new DOMException('Solicitud cancelada', 'AbortError'));
+    abortRef.current = null;
+    stopLoadingState();
+    pushNotice('info', 'Generación detenida', 'La respuesta en curso se canceló correctamente.');
+  }, [pushNotice, stopLoadingState]);
+
+  const sendMessage = useCallback(async (content: string, attachments?: FileAttachment[]) => {
+    const text = content.trim();
+    const hasText = text.length > 0;
+    const hasFiles = Boolean(attachments?.length);
+
+    if ((!hasText && !hasFiles) || state.isLoading) return;
+
+    const userMessage: Message = {
+      id: uid(),
+      role: 'user',
+      content: text,
+      timestamp: Date.now(),
+      attachments,
     };
 
-    let targetId = state.activeConversationId;
-    let shouldCreate = false;
-    if (!targetId) { shouldCreate = true; targetId = uid(); }
+    let targetConversationId = state.activeConversationId;
+    const shouldCreateConversation = !targetConversationId;
+    if (!targetConversationId) {
+      targetConversationId = uid();
+    }
 
-    // agregar mensaje del usuario
-    setState(prev => {
-      let convs = [...prev.conversations];
-      let activeId = prev.activeConversationId;
+    const currentConversation = state.conversations.find(
+      (conversation) => conversation.id === targetConversationId,
+    );
+    const history = (currentConversation?.messages || [])
+      .filter((message) => !message.deleted && message.content)
+      .map((message) => ({
+        role: message.role as 'user' | 'assistant',
+        content: message.content,
+      }));
 
-      if (shouldCreate) {
-        convs = [{
-          id: targetId!, title: generateTitle(content, attachments),
-          messages: [userMsg], createdAt: Date.now(), updatedAt: Date.now(),
-        }, ...convs];
-        activeId = targetId;
+    setState((previous) => {
+      let conversations = [...previous.conversations];
+      let activeConversationId = previous.activeConversationId;
+
+      if (shouldCreateConversation) {
+        conversations = [
+          {
+            id: targetConversationId!,
+            title: generateTitle(text, attachments),
+            messages: [userMessage],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          },
+          ...conversations,
+        ];
+        activeConversationId = targetConversationId!;
       } else {
-        convs = convs.map(c => {
-          if (c.id !== targetId) return c;
-          const isFirst = c.messages.length === 0;
+        conversations = conversations.map((conversation) => {
+          if (conversation.id !== targetConversationId) return conversation;
+          const isFirstMessage = conversation.messages.length === 0;
           return {
-            ...c,
-            title: isFirst ? generateTitle(content, attachments) : c.title,
-            messages: [...c.messages, userMsg], updatedAt: Date.now(),
+            ...conversation,
+            title: isFirstMessage ? generateTitle(text, attachments) : conversation.title,
+            messages: [...conversation.messages, userMessage],
+            updatedAt: Date.now(),
           };
         });
       }
-      persist(convs);
-      return { ...prev, conversations: convs, activeConversationId: activeId, isLoading: true };
+
+      persist(conversations);
+      return {
+        ...previous,
+        conversations,
+        activeConversationId,
+        isLoading: true,
+      };
     });
 
-    // historial para contexto
-    const conv = state.conversations.find(c => c.id === targetId);
-    const history = (conv?.messages || [])
-      .filter(m => !m.deleted && m.content)
-      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
-      const resp = await getBotResponse(content.trim(), history, attachments);
-      // TODO: revisar la latencia de la respuesta AI para la version final
-      // console.log('[sendMessage] respuesta recibida, largo:', resp.length);
-      const botMsg: Message = { id: uid(), role: 'assistant', content: resp, timestamp: Date.now() };
+      const response = await getBotResponse(text, history, attachments, controller.signal);
+      const botMessage: Message = {
+        id: uid(),
+        role: 'assistant',
+        content: response,
+        timestamp: Date.now(),
+      };
 
-      setState(prev => {
-        const convs = prev.conversations.map(c => {
-          if (c.id !== targetId) return c;
-          return { ...c, messages: [...c.messages, botMsg], updatedAt: Date.now() };
+      setState((previous) => {
+        const conversations = previous.conversations.map((conversation) => {
+          if (conversation.id !== targetConversationId) return conversation;
+          return {
+            ...conversation,
+            messages: [...conversation.messages, botMessage],
+            updatedAt: Date.now(),
+          };
         });
-        persist(convs);
-        return { ...prev, conversations: convs, isLoading: false };
-      });
-    } catch {
-      setState(prev => ({ ...prev, isLoading: false }));
-    }
-  }, [state.activeConversationId, state.isLoading, state.conversations, persist, getBotResponse]);
 
-  // regenerar respuesta
+        persist(conversations);
+        return { ...previous, conversations, isLoading: false };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error';
+
+      if (message === 'REQUEST_TIMEOUT') {
+        pushNotice(
+          'warning',
+          'Respuesta demorada',
+          'El proveedor tardó demasiado en responder. Prueba con otro modelo o vuelve a intentarlo.',
+        );
+      } else if (message !== 'REQUEST_ABORTED') {
+        pushNotice(
+          'error',
+          'No se pudo completar',
+          'La respuesta falló antes de terminar. Puedes reintentar o cambiar de proveedor.',
+        );
+      }
+
+      stopLoadingState();
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
+    }
+  }, [getBotResponse, persist, pushNotice, state.activeConversationId, state.conversations, state.isLoading, stopLoadingState]);
+
   const regenerateMessage = useCallback(async (messageId: string) => {
     if (state.isLoading) return;
 
-    const conv = state.conversations.find(c => c.id === state.activeConversationId);
-    if (!conv) return;
+    const conversation = state.conversations.find(
+      (item) => item.id === state.activeConversationId,
+    );
+    if (!conversation) return;
 
-    const msgIdx = conv.messages.findIndex(m => m.id === messageId);
-    if (msgIdx < 0) return;
+    const messageIndex = conversation.messages.findIndex((message) => message.id === messageId);
+    if (messageIndex < 0) return;
 
-    let userText = '';
-    let userFiles: FileAttachment[] | undefined;
-    for (let i = msgIdx - 1; i >= 0; i--) {
-      if (conv.messages[i].role === 'user') {
-        userText = conv.messages[i].content;
-        userFiles = conv.messages[i].attachments;
+    let previousUserText = '';
+    let previousUserFiles: FileAttachment[] | undefined;
+    for (let index = messageIndex - 1; index >= 0; index -= 1) {
+      const message = conversation.messages[index];
+      if (message.role === 'user') {
+        previousUserText = message.content;
+        previousUserFiles = message.attachments;
         break;
       }
     }
 
-    // quitar mensaje viejo
-    setState(prev => {
-      const convs = prev.conversations.map(c => {
-        if (c.id !== state.activeConversationId) return c;
-        return { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: Date.now() };
+    setState((previous) => {
+      const conversations = previous.conversations.map((item) => {
+        if (item.id !== state.activeConversationId) return item;
+        return {
+          ...item,
+          messages: item.messages.filter((message) => message.id !== messageId),
+          updatedAt: Date.now(),
+        };
       });
-      persist(convs);
-      return { ...prev, conversations: convs, isLoading: true };
+
+      persist(conversations);
+      return { ...previous, conversations, isLoading: true };
     });
 
-    const history = conv.messages
-      .filter(m => !m.deleted && m.id !== messageId && m.content)
-      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    const history = conversation.messages
+      .filter((message) => !message.deleted && message.id !== messageId && message.content)
+      .map((message) => ({
+        role: message.role as 'user' | 'assistant',
+        content: message.content,
+      }));
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
-      const resp = await getBotResponse(userText, history, userFiles);
-      const newMsg: Message = { id: uid(), role: 'assistant', content: resp, timestamp: Date.now() };
+      const response = await getBotResponse(
+        previousUserText,
+        history,
+        previousUserFiles,
+        controller.signal,
+      );
+      const newMessage: Message = {
+        id: uid(),
+        role: 'assistant',
+        content: response,
+        timestamp: Date.now(),
+      };
 
-      setState(prev => {
-        const convs = prev.conversations.map(c => {
-          if (c.id !== state.activeConversationId) return c;
-          const msgs = [...c.messages];
-          let insertAt = msgs.length;
-          for (let i = msgs.length - 1; i >= 0; i--) {
-            if (msgs[i].role === 'user') { insertAt = i + 1; break; }
+      setState((previous) => {
+        const conversations = previous.conversations.map((item) => {
+          if (item.id !== state.activeConversationId) return item;
+          const messages = [...item.messages];
+          let insertAt = messages.length;
+          for (let index = messages.length - 1; index >= 0; index -= 1) {
+            if (messages[index].role === 'user') {
+              insertAt = index + 1;
+              break;
+            }
           }
-          msgs.splice(insertAt, 0, newMsg);
-          return { ...c, messages: msgs, updatedAt: Date.now() };
+          messages.splice(insertAt, 0, newMessage);
+          return { ...item, messages, updatedAt: Date.now() };
         });
-        persist(convs);
-        return { ...prev, conversations: convs, isLoading: false };
+
+        persist(conversations);
+        return { ...previous, conversations, isLoading: false };
       });
-    } catch {
-      setState(prev => ({ ...prev, isLoading: false }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error';
+
+      if (message === 'REQUEST_TIMEOUT') {
+        pushNotice(
+          'warning',
+          'Regeneración lenta',
+          'El proveedor tardó demasiado en regenerar esta respuesta.',
+        );
+      } else if (message !== 'REQUEST_ABORTED') {
+        pushNotice(
+          'error',
+          'Regeneración fallida',
+          'No se pudo regenerar la respuesta actual.',
+        );
+      }
+
+      stopLoadingState();
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
     }
-  }, [state.activeConversationId, state.isLoading, state.conversations, persist, getBotResponse]);
+  }, [getBotResponse, persist, pushNotice, state.activeConversationId, state.conversations, state.isLoading, stopLoadingState]);
 
-  // borrar un mensaje
   const deleteMessage = useCallback((messageId: string) => {
-    setState(prev => {
-      const convs = prev.conversations.map(c => {
-        if (c.id !== state.activeConversationId) return c;
-        return { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: Date.now() };
+    setState((previous) => {
+      const conversations = previous.conversations.map((conversation) => {
+        if (conversation.id !== state.activeConversationId) return conversation;
+        return {
+          ...conversation,
+          messages: conversation.messages.filter((message) => message.id !== messageId),
+          updatedAt: Date.now(),
+        };
       });
-      persist(convs);
-      return { ...prev, conversations: convs };
-    });
-  }, [state.activeConversationId, persist]);
 
-  // TODO: en mobile el sidebar a veces no cierra bien con el swipe, hay que agregar gesture handler
+      persist(conversations);
+      return { ...previous, conversations };
+    });
+  }, [persist, state.activeConversationId]);
+
   const toggleSidebar = useCallback(() => {
-    setState(p => ({ ...p, sidebarOpen: !p.sidebarOpen }));
+    setState((previous) => ({ ...previous, sidebarOpen: !previous.sidebarOpen }));
   }, []);
 
   const clearAllConversations = useCallback(() => {
-    if (abortRef.current) abortRef.current.abort();
-    setState({ conversations: [], activeConversationId: null, isLoading: false, sidebarOpen: false });
-    save([]);
-  }, []);
+    if (abortRef.current) {
+      abortRef.current.abort(new DOMException('Solicitud cancelada', 'AbortError'));
+      abortRef.current = null;
+    }
+
+    setState({
+      conversations: [],
+      activeConversationId: null,
+      isLoading: false,
+      sidebarOpen: false,
+    });
+    persist([]);
+  }, [persist]);
+
+  const exportConversations = useCallback((format: 'json' | 'markdown') => {
+    if (state.conversations.length === 0) {
+      pushNotice('info', 'Sin conversaciones', 'Todavía no hay conversaciones para exportar.');
+      return;
+    }
+
+    if (format === 'json') {
+      downloadFile(
+        createExportName('json'),
+        exportJson(state.conversations),
+        'application/json;charset=utf-8',
+      );
+    } else {
+      downloadFile(
+        createExportName('md'),
+        exportMarkdown(state.conversations),
+        'text/markdown;charset=utf-8',
+      );
+    }
+
+    pushNotice(
+      'success',
+      'Exportación lista',
+      format === 'json'
+        ? 'Se descargó un respaldo completo en JSON.'
+        : 'Se descargó un transcript legible en Markdown.',
+    );
+  }, [pushNotice, state.conversations]);
 
   return {
     ...state,
-    activeConversation: active,
+    activeConversation,
     aiSettings,
-    createNewConversation, selectConversation, deleteConversation,
-    sendMessage, regenerateMessage, deleteMessage,
-    toggleSidebar, clearAllConversations, updateAiSettings,
+    notice,
+    createNewConversation,
+    selectConversation,
+    deleteConversation,
+    sendMessage,
+    regenerateMessage,
+    deleteMessage,
+    toggleSidebar,
+    clearAllConversations,
+    updateAiSettings,
+    dismissNotice,
+    cancelGeneration,
+    exportConversations,
   };
 }

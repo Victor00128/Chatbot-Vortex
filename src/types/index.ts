@@ -57,3 +57,12 @@ export interface ChatState {
   isLoading: boolean;
   sidebarOpen: boolean;
 }
+
+export type AppNoticeLevel = 'info' | 'success' | 'warning' | 'error';
+
+export interface AppNotice {
+  id: string;
+  level: AppNoticeLevel;
+  title: string;
+  message: string;
+}

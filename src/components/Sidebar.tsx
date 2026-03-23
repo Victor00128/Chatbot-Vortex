@@ -1,5 +1,3 @@
-// Sidebar de sesiones — muestra el historial de conversaciones
-// Nota: el overlay negro de fondo me costó bastante, no tocar sin revisar el z-index
 import { useState, useCallback } from 'react';
 import { MessageSquarePlus, Trash2, Terminal, X, Eraser, Skull, AlertTriangle } from 'lucide-react';
 import type { Conversation } from '../types';
@@ -15,8 +13,6 @@ interface SidebarProps {
   onClearAll: () => void;
 }
 
-// formatea la fecha relativa de la sesion (eg: "hace 2h")
-// solucion temporal para el formato de fecha, arreglar con dayjs o similar luego
 function formatDate(ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
@@ -30,7 +26,6 @@ function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
 }
 
-// modal de confirmacion
 function ConfirmModal({ message, onConfirm, onCancel }: {
   message: string; onConfirm: () => void; onCancel: () => void;
 }) {
@@ -62,34 +57,41 @@ function ConfirmModal({ message, onConfirm, onCancel }: {
   );
 }
 
-// item de conversacion
 function ConversationItem({ conv, isActive, onSelect, onRequestDelete }: {
   conv: Conversation; isActive: boolean; onSelect: () => void; onRequestDelete: () => void;
 }) {
   return (
     <div
       className={`
-        flex items-center gap-2 rounded-lg px-2.5 py-2.5 sm:px-3 cursor-pointer
-        transition-all duration-200 border
+        group flex items-center gap-2 rounded-lg border px-2.5 py-2.5 sm:px-3
+        transition-all duration-200
         ${isActive
-          ? 'bg-[#00ff4115] border-[#00ff4133] text-[#00ff41] shadow-[0_0_10px_#00ff4110]'
-          : 'border-transparent text-[#555] hover:bg-[#00ff4108] hover:text-[#888] hover:border-[#00ff4115]'
+          ? 'border-[#00ff4133] bg-[#00ff4115] text-[#00ff41] shadow-[0_0_10px_#00ff4110]'
+          : 'border-transparent text-[#555] hover:border-[#00ff4115] hover:bg-[#00ff4108] hover:text-[#888]'
         }
       `}
-      onClick={onSelect}
     >
-      <Terminal size={12} className="shrink-0 opacity-60" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] sm:text-xs font-medium">{conv.title}</p>
-        <p className="text-[9px] sm:text-[10px] opacity-40 mt-0.5 font-mono">
-          {conv.messages.length} msg · {formatDate(conv.updatedAt)}
-        </p>
-      </div>
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={isActive}
+        aria-label={`Abrir conversación ${conv.title || 'sin título'}`}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+      >
+        <Terminal size={12} className="shrink-0 opacity-60" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] sm:text-xs font-medium">{conv.title}</p>
+          <p className="mt-0.5 font-mono text-[9px] opacity-40 sm:text-[10px]">
+            {conv.messages.length} mensajes · {formatDate(conv.updatedAt)}
+          </p>
+        </div>
+      </button>
 
       <button
-        onClick={(e) => { e.stopPropagation(); onRequestDelete(); }}
-        className="shrink-0 rounded-md p-1.5 transition-all text-[#ff004066] hover:bg-[#ff004020] hover:text-[#ff0040] active:scale-90 opacity-60 hover:opacity-100"
-        aria-label="Eliminar"
+        type="button"
+        onClick={onRequestDelete}
+        className="shrink-0 rounded-md p-1.5 text-[#ff004066] opacity-60 transition-all hover:bg-[#ff004020] hover:text-[#ff0040] hover:opacity-100 focus-visible:opacity-100 active:scale-90"
+        aria-label={`Eliminar conversación ${conv.title || 'sin título'}`}
       >
         <Trash2 size={13} />
       </button>
@@ -102,7 +104,6 @@ export function Sidebar({
 }: SidebarProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [clearAll, setClearAll] = useState(false);
-  // console.log('[Sidebar] sesiones cargadas:', conversations.length, '| activa:', activeId);
 
   const confirmDelete = useCallback(() => {
     if (deleteId) {
@@ -118,7 +119,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm transition-opacity"
@@ -135,7 +135,6 @@ export function Sidebar({
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* cabecera */}
         <div className="flex items-center justify-between border-b border-[#00ff4118] px-3 py-3 sm:px-4 sm:py-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#00cc33] to-[#009922] shadow-lg shadow-[#00ff4133]">
@@ -149,31 +148,29 @@ export function Sidebar({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#00ff4155] hover:bg-[#00ff4115] hover:text-[#00ff41] transition-colors active:scale-90"
+            className="rounded-lg p-1.5 text-[#00ff4155] transition-colors hover:bg-[#00ff4115] hover:text-[#00ff41] focus-visible:opacity-100 active:scale-90"
             aria-label="Cerrar"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* nueva sesion */}
         <div className="p-2 sm:p-3">
           <button
             onClick={() => { onNewChat(); onClose(); }}
-            className="flex w-full items-center gap-2.5 rounded-lg border border-[#00ff4122] bg-[#00ff4108] px-3 py-2.5 sm:px-4 sm:py-3 text-[10px] sm:text-xs font-bold tracking-wider text-[#00ff41aa] transition-all hover:bg-[#00ff4118] hover:text-[#00ff41] hover:border-[#00ff4144] active:scale-[0.98]"
+            className="flex w-full items-center gap-2.5 rounded-lg border border-[#00ff4122] bg-[#00ff4108] px-3 py-2.5 text-[10px] font-bold tracking-wider text-[#00ff41aa] transition-all hover:border-[#00ff4144] hover:bg-[#00ff4118] hover:text-[#00ff41] focus-visible:opacity-100 active:scale-[0.98] sm:px-4 sm:py-3 sm:text-xs"
           >
             <MessageSquarePlus size={15} />
-            NUEVA SESION
+            NUEVA CONVERSACIÓN
           </button>
         </div>
 
-        {/* lista */}
         <div className="flex-1 overflow-y-auto px-2 pb-2 sm:px-3 sm:pb-3 sidebar-scroll">
           {conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 sm:py-12 text-[#00ff4133]">
               <Terminal size={24} className="mb-3 opacity-50" />
-              <p className="text-[10px] sm:text-xs font-mono tracking-wider">SIN SESIONES</p>
-              <p className="text-[9px] sm:text-[10px] mt-1 opacity-50 font-mono">Inicia una nueva</p>
+              <p className="text-[10px] sm:text-xs font-mono tracking-wider">SIN CONVERSACIONES</p>
+              <p className="text-[9px] sm:text-[10px] mt-1 opacity-50 font-mono">Crea una para empezar</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -190,24 +187,22 @@ export function Sidebar({
           )}
         </div>
 
-        {/* limpiar todo */}
         {conversations.length > 0 && (
           <div className="border-t border-[#00ff4118] p-2 sm:p-3">
             <button
               onClick={() => setClearAll(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[#ff004055] transition-all hover:bg-[#ff004015] hover:text-[#ff0040] active:scale-95"
+              className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-[9px] font-bold tracking-wider text-[#ff004055] transition-all hover:bg-[#ff004015] hover:text-[#ff0040] focus-visible:opacity-100 active:scale-95 sm:px-4 sm:py-2.5 sm:text-[10px]"
             >
               <Eraser size={12} />
-              LIMPIAR TODO
+              BORRAR TODO
             </button>
           </div>
         )}
       </aside>
 
-      {/* modales de confirmacion */}
       {deleteId && (
         <ConfirmModal
-          message="Eliminar esta sesion? Los mensajes se borraran."
+          message="¿Eliminar esta conversación? También se borrarán sus mensajes."
           onConfirm={confirmDelete}
           onCancel={() => setDeleteId(null)}
         />
@@ -215,7 +210,7 @@ export function Sidebar({
 
       {clearAll && (
         <ConfirmModal
-          message="Borrar TODAS las sesiones? No se puede deshacer."
+          message="¿Borrar todas las conversaciones? Esta acción no se puede deshacer."
           onConfirm={confirmClearAll}
           onCancel={() => setClearAll(false)}
         />
