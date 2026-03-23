@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import type { Conversation, FileAttachment, AISettings } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
@@ -28,12 +28,46 @@ export function ChatArea({
   aiSettings,
 }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const lastConversationIdRef = useRef<string | null>(null);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+  }, []);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      shouldStickToBottomRef.current = distanceFromBottom < 96;
+    };
+
+    handleScroll();
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const conversationId = conversation?.id ?? null;
+    const conversationChanged = lastConversationIdRef.current !== conversationId;
+
+    if (conversationChanged) {
+      lastConversationIdRef.current = conversationId;
+      shouldStickToBottomRef.current = true;
+      scrollToBottom();
+      return;
     }
-  }, [conversation?.messages, isLoading]);
+
+    if (shouldStickToBottomRef.current) {
+      scrollToBottom();
+    }
+  }, [conversation?.id, conversation?.messages.length, isLoading, scrollToBottom]);
 
   const hasMessages = conversation && conversation.messages.length > 0;
 
@@ -46,7 +80,6 @@ export function ChatArea({
         aiSettings={aiSettings}
       />
 
-      {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         {!hasMessages ? (
           <WelcomeScreen
@@ -77,7 +110,6 @@ export function ChatArea({
         )}
       </div>
 
-      {/* Input */}
       <ChatInput onSend={onSend} isLoading={isLoading} />
     </div>
   );

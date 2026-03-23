@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Menu, Skull, Wifi, Lock, Settings, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Menu, Skull, Settings, Zap } from 'lucide-react';
 import type { AISettings } from '../types';
 import { getProviderConfig } from '../utils/api';
 
@@ -11,7 +11,6 @@ interface HeaderProps {
 }
 
 export function Header({ onToggleSidebar, onOpenSettings, conversationTitle, aiSettings }: HeaderProps) {
-  const [sessionId] = useState(() => Math.random().toString(36).substring(2, 8).toUpperCase());
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -28,7 +27,7 @@ export function Header({ onToggleSidebar, onOpenSettings, conversationTitle, aiS
         <button
           onClick={onToggleSidebar}
           className="rounded-lg p-1.5 sm:p-2 text-[#00ff4155] transition-all hover:bg-[#00ff4115] hover:text-[#00ff41] active:scale-95 shrink-0"
-          aria-label="Menu"
+          aria-label="Abrir conversaciones"
         >
           <Menu size={18} />
         </button>
@@ -47,10 +46,8 @@ export function Header({ onToggleSidebar, onOpenSettings, conversationTitle, aiS
                 <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${online ? 'bg-[#00ff41]' : 'bg-yellow-500'}`} />
               </span>
               <span className="text-[8px] sm:text-[9px] font-mono text-[#00ff4166] tracking-wider">
-                {online ? provider.name.toUpperCase() : 'OFFLINE'}
+                {online ? provider.name.toUpperCase() : 'LOCAL'}
               </span>
-              <Lock size={7} className="text-[#00ff4133] hidden xs:block" />
-              <Wifi size={7} className="text-[#00ff4133] hidden xs:block" />
             </div>
           </div>
         </div>
@@ -62,7 +59,7 @@ export function Header({ onToggleSidebar, onOpenSettings, conversationTitle, aiS
           <span className="text-[8px] sm:text-[9px] font-mono text-[#00ff4155] tracking-wider">
             {aiSettings.provider !== 'offline'
               ? `${provider.name} · ${aiSettings.model.split('/').pop()?.split('-').slice(0, 3).join('-')}`
-              : 'OFFLINE'}
+              : 'Modo local'}
           </span>
         </div>
 
@@ -70,15 +67,10 @@ export function Header({ onToggleSidebar, onOpenSettings, conversationTitle, aiS
           {time.toLocaleTimeString('en-US', { hour12: false })}
         </span>
 
-        <div className="hidden md:flex items-center gap-2 rounded-lg border border-[#00ff4115] bg-[#00ff4108] px-2.5 py-1">
-          <span className="text-[9px] font-mono text-[#00ff4144]">SESSION</span>
-          <span className="text-[9px] font-mono text-[#00ff4166]">{sessionId}</span>
-        </div>
-
         <button
           onClick={onOpenSettings}
           className="rounded-lg p-1.5 sm:p-2 text-[#00ff4155] transition-all hover:bg-[#00ff4115] hover:text-[#00ff41] active:scale-95"
-          aria-label="Configuracion"
+          aria-label="Abrir configuración"
         >
           <Settings size={16} />
         </button>

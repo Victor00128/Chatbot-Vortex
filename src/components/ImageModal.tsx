@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useId } from 'react';
 import { X, Download } from 'lucide-react';
 
 interface ImageModalProps {
@@ -8,6 +8,7 @@ interface ImageModalProps {
 }
 
 export function ImageModal({ src, name, onClose }: ImageModalProps) {
+  const titleId = useId();
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -33,27 +34,34 @@ export function ImageModal({ src, name, onClose }: ImageModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-2 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-2 backdrop-blur-md sm:p-4"
       onClick={onClose}
     >
       {/* Top bar */}
       <div className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 flex items-center justify-between">
-        <span className="text-[10px] sm:text-xs font-mono text-[#00ff4188] truncate max-w-[60%]">
+        <span id={titleId} className="max-w-[60%] truncate font-mono text-[10px] text-[#00ff4188] sm:text-xs">
           {name}
         </span>
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               handleDownload();
             }}
-            className="rounded-lg p-1.5 sm:p-2 text-[#00ff4188] hover:bg-[#00ff4122] hover:text-[#00ff41] transition-colors"
+            aria-label={`Descargar ${name}`}
+            className="rounded-lg p-1.5 text-[#00ff4188] transition-colors hover:bg-[#00ff4122] hover:text-[#00ff41] sm:p-2"
           >
             <Download size={16} />
           </button>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 sm:p-2 text-[#ff004088] hover:bg-[#ff004022] hover:text-[#ff0040] transition-colors"
+            aria-label="Cerrar imagen"
+            className="rounded-lg p-1.5 text-[#ff004088] transition-colors hover:bg-[#ff004022] hover:text-[#ff0040] sm:p-2"
           >
             <X size={16} />
           </button>

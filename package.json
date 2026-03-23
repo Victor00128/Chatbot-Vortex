@@ -2,8 +2,8 @@
   "name": "vortex-chatbot",
   "private": true,
   "version": "1.0.0",
-  "description": "Una interfaz de chatbot avanzada para la empresa Vortex",
-  "author": "Julio Cesar",
+  "description": "Multi-provider AI chat interface with local mode and bring-your-own-key providers.",
+  "author": "Julio Cesar Morales",
   "type": "module",
   "scripts": {
     "dev": "vite",
