@@ -27,6 +27,7 @@ export function App() {
     dismissNotice,
     cancelGeneration,
     exportConversations,
+    exportConversation,
   } = useChat();
 
   const [showSettings, setShowSettings] = useState(false);
@@ -44,6 +45,7 @@ export function App() {
         onNewChat={createNewConversation}
         onSelect={selectConversation}
         onDelete={deleteConversation}
+        onExportConversation={exportConversation}
         onClose={toggleSidebar}
         onClearAll={clearAllConversations}
       />
@@ -71,11 +73,8 @@ export function App() {
       )}
 
       <ControlDock
-        hasConversations={conversations.length > 0}
         isLoading={isLoading}
         onStop={cancelGeneration}
-        onExportJson={() => exportConversations('json')}
-        onExportMarkdown={() => exportConversations('markdown')}
       />
     </div>
   );

@@ -108,9 +108,19 @@ function downloadFile(fileName: string, contents: string, mimeType: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-function createExportName(extension: 'json' | 'md'): string {
+function slugifyTitle(title: string): string {
+  return title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48) || 'conversation';
+}
+
+function createExportName(extension: 'json' | 'md', title = 'vortex-export'): string {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  return `vortex-export-${stamp}.${extension}`;
+  return `${slugifyTitle(title)}-${stamp}.${extension}`;
 }
 
 export function useChat() {
@@ -553,6 +563,39 @@ export function useChat() {
     );
   }, [pushNotice, state.conversations]);
 
+  const exportConversation = useCallback((conversationId: string, format: 'json' | 'markdown') => {
+    const conversation = state.conversations.find((item) => item.id === conversationId);
+
+    if (!conversation) {
+      pushNotice('warning', 'Conversación no encontrada', 'No se pudo exportar esa conversación.');
+      return;
+    }
+
+    const exportLabel = `vortex-${conversation.title || 'chat'}`;
+
+    if (format === 'json') {
+      downloadFile(
+        createExportName('json', exportLabel),
+        exportJson([conversation]),
+        'application/json;charset=utf-8',
+      );
+    } else {
+      downloadFile(
+        createExportName('md', exportLabel),
+        exportMarkdown([conversation]),
+        'text/markdown;charset=utf-8',
+      );
+    }
+
+    pushNotice(
+      'success',
+      'Conversación exportada',
+      format === 'json'
+        ? `Se descargó "${conversation.title}" en JSON.`
+        : `Se descargó "${conversation.title}" en Markdown.`,
+    );
+  }, [pushNotice, state.conversations]);
+
   return {
     ...state,
     activeConversation,
@@ -570,5 +613,6 @@ export function useChat() {
     dismissNotice,
     cancelGeneration,
     exportConversations,
+    exportConversation,
   };
 }
