@@ -1,5 +1,8 @@
-import { useState, useCallback } from 'react';
-import { MessageSquarePlus, Trash2, Terminal, X, Eraser, Skull, AlertTriangle } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  AlertTriangle, Eraser, FileJson, FileText, MessageSquarePlus,
+  MoreVertical, Skull, Terminal, Trash2, X,
+} from 'lucide-react';
 import type { Conversation } from '../types';
 
 interface SidebarProps {
@@ -9,6 +12,7 @@ interface SidebarProps {
   onNewChat: () => void;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onExportConversation: (id: string, format: 'json' | 'markdown') => void;
   onClose: () => void;
   onClearAll: () => void;
 }
@@ -57,13 +61,29 @@ function ConfirmModal({ message, onConfirm, onCancel }: {
   );
 }
 
-function ConversationItem({ conv, isActive, onSelect, onRequestDelete }: {
-  conv: Conversation; isActive: boolean; onSelect: () => void; onRequestDelete: () => void;
+function ConversationItem({
+  conv,
+  isActive,
+  isMenuOpen,
+  onSelect,
+  onMenuToggle,
+  onRequestDelete,
+  onExportJson,
+  onExportMarkdown,
+}: {
+  conv: Conversation;
+  isActive: boolean;
+  isMenuOpen: boolean;
+  onSelect: () => void;
+  onMenuToggle: () => void;
+  onRequestDelete: () => void;
+  onExportJson: () => void;
+  onExportMarkdown: () => void;
 }) {
   return (
     <div
       className={`
-        group flex items-center gap-2 rounded-lg border px-2.5 py-2.5 sm:px-3
+        group relative flex items-center gap-2 rounded-lg border px-2.5 py-2.5 sm:px-3
         transition-all duration-200
         ${isActive
           ? 'border-[#00ff4133] bg-[#00ff4115] text-[#00ff41] shadow-[0_0_10px_#00ff4110]'
@@ -89,32 +109,83 @@ function ConversationItem({ conv, isActive, onSelect, onRequestDelete }: {
 
       <button
         type="button"
-        onClick={onRequestDelete}
-        className="shrink-0 rounded-md p-1.5 text-[#ff004066] opacity-60 transition-all hover:bg-[#ff004020] hover:text-[#ff0040] hover:opacity-100 focus-visible:opacity-100 active:scale-90"
-        aria-label={`Eliminar conversación ${conv.title || 'sin título'}`}
+        onClick={onMenuToggle}
+        aria-expanded={isMenuOpen}
+        aria-haspopup="menu"
+        className={`shrink-0 rounded-md p-1.5 transition-all focus-visible:opacity-100 active:scale-90 ${
+          isMenuOpen
+            ? 'bg-[#00ff4118] text-[#00ff41] opacity-100'
+            : 'text-[#00ff4170] opacity-60 hover:bg-[#00ff4115] hover:text-[#00ff41] hover:opacity-100'
+        }`}
+        aria-label={`Más opciones para ${conv.title || 'sin título'}`}
       >
-        <Trash2 size={13} />
+        <MoreVertical size={14} />
       </button>
+
+      {isMenuOpen && (
+        <div
+          role="menu"
+          aria-label={`Opciones para ${conv.title || 'sin título'}`}
+          className="absolute right-2 top-[calc(100%+0.35rem)] z-20 min-w-[172px] overflow-hidden rounded-xl border border-[#00ff4126] bg-[#08110c]/98 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl"
+        >
+          <button
+            type="button"
+            onClick={onExportJson}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-[#85daff] transition-colors hover:bg-[#07202b]"
+            role="menuitem"
+          >
+            <FileJson size={14} />
+            Exportar JSON
+          </button>
+          <button
+            type="button"
+            onClick={onExportMarkdown}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-[#8fffb0] transition-colors hover:bg-[#0d1c10]"
+            role="menuitem"
+          >
+            <FileText size={14} />
+            Exportar Markdown
+          </button>
+          <button
+            type="button"
+            onClick={onRequestDelete}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-[#ff7e94] transition-colors hover:bg-[#21090f]"
+            role="menuitem"
+          >
+            <Trash2 size={14} />
+            Eliminar
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 export function Sidebar({
-  conversations, activeId, isOpen, onNewChat, onSelect, onDelete, onClose, onClearAll,
+  conversations, activeId, isOpen, onNewChat, onSelect, onDelete, onExportConversation, onClose, onClearAll,
 }: SidebarProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [clearAll, setClearAll] = useState(false);
+  const [menuId, setMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuId(null);
+    }
+  }, [isOpen]);
 
   const confirmDelete = useCallback(() => {
     if (deleteId) {
       onDelete(deleteId);
     }
     setDeleteId(null);
+    setMenuId(null);
   }, [deleteId, onDelete]);
 
   const confirmClearAll = useCallback(() => {
     onClearAll();
     setClearAll(false);
+    setMenuId(null);
   }, [onClearAll]);
 
   return (
@@ -165,7 +236,10 @@ export function Sidebar({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 pb-2 sm:px-3 sm:pb-3 sidebar-scroll">
+        <div
+          className="flex-1 overflow-y-auto px-2 pb-2 sm:px-3 sm:pb-3 sidebar-scroll"
+          onScroll={() => setMenuId(null)}
+        >
           {conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 sm:py-12 text-[#00ff4133]">
               <Terminal size={24} className="mb-3 opacity-50" />
@@ -179,8 +253,25 @@ export function Sidebar({
                   key={conv.id}
                   conv={conv}
                   isActive={conv.id === activeId}
-                  onSelect={() => { onSelect(conv.id); onClose(); }}
-                  onRequestDelete={() => setDeleteId(conv.id)}
+                  isMenuOpen={menuId === conv.id}
+                  onSelect={() => {
+                    setMenuId(null);
+                    onSelect(conv.id);
+                    onClose();
+                  }}
+                  onMenuToggle={() => setMenuId((current) => (current === conv.id ? null : conv.id))}
+                  onRequestDelete={() => {
+                    setMenuId(null);
+                    setDeleteId(conv.id);
+                  }}
+                  onExportJson={() => {
+                    onExportConversation(conv.id, 'json');
+                    setMenuId(null);
+                  }}
+                  onExportMarkdown={() => {
+                    onExportConversation(conv.id, 'markdown');
+                    setMenuId(null);
+                  }}
                 />
               ))}
             </div>
@@ -190,13 +281,25 @@ export function Sidebar({
         {conversations.length > 0 && (
           <div className="border-t border-[#00ff4118] p-2 sm:p-3">
             <button
-              onClick={() => setClearAll(true)}
+              onClick={() => {
+                setMenuId(null);
+                setClearAll(true);
+              }}
               className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-[9px] font-bold tracking-wider text-[#ff004055] transition-all hover:bg-[#ff004015] hover:text-[#ff0040] focus-visible:opacity-100 active:scale-95 sm:px-4 sm:py-2.5 sm:text-[10px]"
             >
               <Eraser size={12} />
               BORRAR TODO
             </button>
           </div>
+        )}
+
+        {menuId && (
+          <button
+            type="button"
+            aria-label="Cerrar menú"
+            className="fixed inset-0 z-10 cursor-default bg-transparent"
+            onClick={() => setMenuId(null)}
+          />
         )}
       </aside>
 
