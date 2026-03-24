@@ -31,7 +31,7 @@ function MatrixRain() {
 
     const fontSize = window.innerWidth < 640 ? 11 : 14;
     let columns = Math.floor(canvas.width / fontSize);
-    let drops: number[] = Array(columns).fill(0).map(() => Math.random() * -100);
+    const drops: number[] = Array(columns).fill(0).map(() => Math.random() * -100);
 
     const draw = () => {
       ctx.fillStyle = 'rgba(5, 5, 5, 0.06)';
