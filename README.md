@@ -1,5 +1,8 @@
 # Chatbot Vortex
 
+[![CI](https://github.com/Victor00128/Chatbot-Vortex/actions/workflows/ci.yml/badge.svg)](https://github.com/Victor00128/Chatbot-Vortex/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-0F172A.svg)](./LICENSE)
+
 ![Chatbot Vortex screenshot](./Imagen/Chatbot-Vortex.png)
 
 Chatbot Vortex es una interfaz de chat para trabajar con varios proveedores de IA desde un solo lugar. El proyecto permite probar la experiencia en modo local, conectar proveedores con API key propia y exportar conversaciones desde el navegador.
@@ -53,6 +56,15 @@ npm run build
 - `npm run dev`
 - `npm run build`
 - `npm run preview`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test`
+
+## Calidad
+
+- CI en GitHub Actions para `lint`, `typecheck`, `test` y `build`
+- Changelog publico en [CHANGELOG.md](CHANGELOG.md)
+- Tests humo para utilidades criticas de chat y archivos
 
 ## Configuracion
 
