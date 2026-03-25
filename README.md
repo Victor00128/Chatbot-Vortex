@@ -65,6 +65,7 @@ npm run build
 - CI en GitHub Actions para `lint`, `typecheck`, `test` y `build`
 - Changelog publico en [CHANGELOG.md](CHANGELOG.md)
 - Tests humo para utilidades criticas de chat y archivos
+- Backend complementario disponible en [Vortex Gateway](https://github.com/Victor00128/vortex-gateway)
 
 ## Configuracion
 
@@ -123,7 +124,7 @@ Esta version deja el proyecto en un estado mucho mas solido para demo, revision 
 
 ## Siguientes pasos recomendados
 
-1. Sacar las llamadas a proveedores del frontend y moverlas a un backend.
+1. Migrar las llamadas a proveedores a [Vortex Gateway](https://github.com/Victor00128/vortex-gateway).
 2. Anadir autenticacion de usuarios y planes.
 3. Guardar historial en base de datos o IndexedDB, no solo en `localStorage`.
 4. Incorporar analitica, rate limiting y panel administrativo.
