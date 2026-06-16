@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   AlertTriangle, Eraser, FileJson, FileText, MessageSquarePlus,
-  MoreVertical, Skull, Terminal, Trash2, X,
+  MoreVertical, Search, Skull, Terminal, Trash2, X,
 } from 'lucide-react';
 import type { Conversation } from '../types';
 
@@ -167,12 +167,24 @@ export function Sidebar({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [clearAll, setClearAll] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setMenuId(null);
+      setQuery('');
     }
   }, [isOpen]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter(
+      (c) =>
+        (c.title || '').toLowerCase().includes(q) ||
+        c.messages.some((m) => (m.content || '').toLowerCase().includes(q))
+    );
+  }, [conversations, query]);
 
   const confirmDelete = useCallback(() => {
     if (deleteId) {
@@ -236,6 +248,35 @@ export function Sidebar({
           </button>
         </div>
 
+        {conversations.length > 0 && (
+          <div className="px-2 pb-1 sm:px-3">
+            <div className="flex items-center gap-2 rounded-lg border border-[#00ff4118] bg-[#00ff4106] px-2.5 py-2 transition-colors focus-within:border-[#00ff4144] focus-within:bg-[#00ff410a]">
+              <Search size={13} className="shrink-0 text-[#00ff4166]" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setQuery('');
+                }}
+                placeholder="Buscar conversación..."
+                aria-label="Buscar conversaciones"
+                className="min-w-0 flex-1 bg-transparent font-mono text-[11px] text-[#00ff41cc] outline-none placeholder:text-[#00ff4144]"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  aria-label="Limpiar búsqueda"
+                  className="shrink-0 text-[#00ff4155] transition-colors hover:text-[#00ff41] active:scale-90"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div
           className="flex-1 overflow-y-auto px-2 pb-2 sm:px-3 sm:pb-3 sidebar-scroll"
           onScroll={() => setMenuId(null)}
@@ -246,9 +287,15 @@ export function Sidebar({
               <p className="text-[10px] sm:text-xs font-mono tracking-wider">SIN CONVERSACIONES</p>
               <p className="text-[9px] sm:text-[10px] mt-1 opacity-50 font-mono">Crea una para empezar</p>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 sm:py-12 text-[#00ff4133]">
+              <Search size={24} className="mb-3 opacity-50" />
+              <p className="text-[10px] sm:text-xs font-mono tracking-wider">SIN RESULTADOS</p>
+              <p className="mt-1 text-[9px] sm:text-[10px] opacity-50 font-mono">Probá otro término</p>
+            </div>
           ) : (
             <div className="space-y-1">
-              {conversations.map((conv) => (
+              {filtered.map((conv) => (
                 <ConversationItem
                   key={conv.id}
                   conv={conv}

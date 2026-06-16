@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Busqueda de conversaciones en la barra lateral: filtra por titulo y contenido del chat, con estado vacio "sin resultados" y limpieza rapida (Escape o boton).
+
+### Fixed
+
+- Eliminadas referencias rotas a "Vortex Gateway" en el README (ese repositorio ya no existe).
+
 ## [1.0.0] - 2026-03-24
 
 ### Added

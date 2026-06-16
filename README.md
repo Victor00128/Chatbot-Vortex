@@ -17,6 +17,7 @@ Chatbot Vortex es una interfaz de chat para trabajar con varios proveedores de I
 
 - Multiples proveedores en una sola UI: Gemini, Groq, OpenAI, DeepSeek, OpenRouter y modo local.
 - Historial persistente en el navegador con exportacion a JSON y Markdown.
+- Busqueda de conversaciones por titulo y contenido desde la barra lateral.
 - Adjuntos con analisis basico de imagenes, PDFs, ZIPs, codigo, CSV, JSON, audio y video.
 - Configuracion de modelo, temperatura, tokens maximos y prompt del sistema.
 - Mejoras de accesibilidad: navegacion por teclado, mejor foco visual y menos movimiento si el sistema pide `prefers-reduced-motion`.
@@ -65,7 +66,6 @@ npm run build
 - CI en GitHub Actions para `lint`, `typecheck`, `test` y `build`
 - Changelog publico en [CHANGELOG.md](CHANGELOG.md)
 - Tests humo para utilidades criticas de chat y archivos
-- Backend complementario disponible en [Vortex Gateway](https://github.com/Victor00128/vortex-gateway)
 
 ## Configuracion
 
@@ -124,7 +124,7 @@ Esta version deja el proyecto en un estado mucho mas solido para demo, revision 
 
 ## Siguientes pasos recomendados
 
-1. Migrar las llamadas a proveedores a [Vortex Gateway](https://github.com/Victor00128/vortex-gateway).
+1. Migrar las llamadas a proveedores a un backend o proxy propio que proteja las claves.
 2. Anadir autenticacion de usuarios y planes.
 3. Guardar historial en base de datos o IndexedDB, no solo en `localStorage`.
 4. Incorporar analitica, rate limiting y panel administrativo.
