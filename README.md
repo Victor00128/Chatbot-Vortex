@@ -5,23 +5,23 @@
 
 ![Chatbot Vortex screenshot](./Imagen/Chatbot-Vortex.png)
 
-Chatbot Vortex es una interfaz de chat para trabajar con varios proveedores de IA desde un solo lugar. El proyecto permite probar la experiencia en modo local, conectar proveedores con API key propia y exportar conversaciones desde el navegador.
+Chatbot Vortex is a chat interface for working with multiple AI providers from a single place. The project lets you try the experience in local mode, connect providers with your own API key, and export conversations straight from the browser.
 
 ## Demo
 
-- Demo online: https://vortex-ia.netlify.app/
-- Modo por defecto: `offline`
-- Uso recomendado actual: demos, validacion de flujo y pruebas con BYOK
+- Live demo: https://vortex-ia.netlify.app/
+- Default mode: `offline`
+- Recommended use today: demos, flow validation, and BYOK testing
 
-## Que ofrece
+## What it offers
 
-- Multiples proveedores en una sola UI: Gemini, Groq, OpenAI, DeepSeek, OpenRouter y modo local.
-- Historial persistente en el navegador con exportacion a JSON y Markdown.
-- Busqueda de conversaciones por titulo y contenido desde la barra lateral.
-- Adjuntos con analisis basico de imagenes, PDFs, ZIPs, codigo, CSV, JSON, audio y video.
-- Configuracion de modelo, temperatura, tokens maximos y prompt del sistema.
-- Mejoras de accesibilidad: navegacion por teclado, mejor foco visual y menos movimiento si el sistema pide `prefers-reduced-motion`.
-- Cancelacion de respuesta en curso y avisos visibles de estado o error.
+- Multiple providers in a single UI: Gemini, Groq, OpenAI, DeepSeek, OpenRouter, and local mode.
+- Persistent in-browser history with export to JSON and Markdown.
+- Conversation search by title and content from the sidebar.
+- Attachments with basic analysis of images, PDFs, ZIPs, code, CSV, JSON, audio, and video.
+- Configurable model, temperature, max tokens, and system prompt.
+- Accessibility improvements: keyboard navigation, clearer focus states, and reduced motion when the system requests `prefers-reduced-motion`.
+- Cancel an in-progress response, with visible status and error notices.
 
 ## Stack
 
@@ -31,13 +31,13 @@ Chatbot Vortex es una interfaz de chat para trabajar con varios proveedores de I
 - Tailwind CSS v4
 - Lucide React
 
-## Inicio rapido
+## Quick start
 
-Requisitos:
+Requirements:
 
-- Node.js 18 o superior
+- Node.js 18 or higher
 
-Instalacion:
+Installation:
 
 ```bash
 git clone https://github.com/Victor00128/Chatbot-Vortex.git
@@ -46,13 +46,13 @@ npm ci
 npm run dev
 ```
 
-Build de produccion:
+Production build:
 
 ```bash
 npm run build
 ```
 
-## Scripts disponibles
+## Available scripts
 
 - `npm run dev`
 - `npm run build`
@@ -61,47 +61,47 @@ npm run build
 - `npm run typecheck`
 - `npm run test`
 
-## Calidad
+## Quality
 
-- CI en GitHub Actions para `lint`, `typecheck`, `test` y `build`
-- Changelog publico en [CHANGELOG.md](CHANGELOG.md)
-- Tests humo para utilidades criticas de chat y archivos
+- GitHub Actions CI for `lint`, `typecheck`, `test`, and `build`
+- Public changelog in [CHANGELOG.md](CHANGELOG.md)
+- Smoke tests for critical chat and file utilities
 
-## Configuracion
+## Configuration
 
-La app arranca en `offline` por defecto. Eso evita exponer una clave preconfigurada y permite probar la interfaz sin tocar ninguna API.
+The app starts in `offline` mode by default. This avoids shipping a preconfigured key and lets you try the interface without touching any API.
 
-Si quieres usar un proveedor real:
+If you want to use a real provider:
 
-1. Abre el boton de ajustes.
-2. Elige proveedor.
-3. Pega tu API key.
-4. Guarda y prueba conexion.
+1. Open the settings button.
+2. Choose a provider.
+3. Paste your API key.
+4. Save and test the connection.
 
-## Seguridad
+## Security
 
-La version actual funciona con API key propia. Cuando eliges un proveedor real, la clave se usa directamente desde el navegador.
+The current version works with your own API key. When you choose a real provider, the key is used directly from the browser.
 
-Eso sirve para:
+That's good for:
 
 - demos
-- uso personal
-- validacion rapida del flujo
+- personal use
+- quick flow validation
 
-No es suficiente para:
+It is not enough for:
 
-- producto multiusuario
-- ventas a empresas
-- control real de cuotas, billing o abuse prevention
+- a multi-user product
+- enterprise sales
+- real quota control, billing, or abuse prevention
 
-Si el proyecto evoluciona a una version comercial multiusuario, el siguiente paso logico es montar un backend o proxy que:
+If the project evolves into a multi-user commercial version, the logical next step is to set up a backend or proxy that:
 
-- reciba las peticiones del frontend
-- proteja las claves
-- aplique autenticacion, rate limits y observabilidad
-- opcionalmente guarde historial fuera del navegador
+- receives requests from the frontend
+- protects the keys
+- enforces authentication, rate limits, and observability
+- optionally stores history outside the browser
 
-## Estructura
+## Structure
 
 ```text
 src/
@@ -112,24 +112,24 @@ src/
 └── App.tsx
 ```
 
-## Estado actual
+## Current status
 
-Esta version deja el proyecto en un estado mucho mas solido para demo, revision tecnica e iteracion:
+This version leaves the project in a much more solid state for demos, technical review, and iteration:
 
-- configuracion segura por defecto
-- interfaz mas consistente
-- exportacion de datos
-- accesibilidad basica mas solida
-- manejo mas claro de errores y tiempos de espera
+- secure configuration by default
+- a more consistent interface
+- data export
+- stronger baseline accessibility
+- clearer handling of errors and timeouts
 
-## Siguientes pasos recomendados
+## Recommended next steps
 
-1. Migrar las llamadas a proveedores a un backend o proxy propio que proteja las claves.
-2. Anadir autenticacion de usuarios y planes.
-3. Guardar historial en base de datos o IndexedDB, no solo en `localStorage`.
-4. Incorporar analitica, rate limiting y panel administrativo.
-5. Preparar landing, pricing y una demo publica mas completa.
+1. Move provider calls to your own backend or proxy that protects the keys.
+2. Add user authentication and plans.
+3. Store history in a database or IndexedDB, not just `localStorage`.
+4. Add analytics, rate limiting, and an admin panel.
+5. Prepare a landing page, pricing, and a more complete public demo.
 
-## Licencia
+## License
 
-MIT. Ver el archivo [LICENSE](LICENSE).
+MIT. See the [LICENSE](LICENSE) file.
