@@ -9,7 +9,7 @@ Chatbot Vortex is a chat interface for working with multiple AI providers from a
 
 ## Demo
 
-- Live demo: https://vortex-ia.netlify.app/
+- Live demo: https://chatbot-vortex.vercel.app/
 - Default mode: `offline`
 - Recommended use today: demos, flow validation, and BYOK testing
 

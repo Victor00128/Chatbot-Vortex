@@ -59,15 +59,6 @@ export function SettingsModal({
     };
   }, []);
 
-  // Auto-detect models when Gemini is selected and there's an API key
-  useEffect(() => {
-    if (local.provider === 'gemini' && local.apiKey.trim() && !autoDetected) {
-      handleDetectModels();
-      setAutoDetected(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [local.provider]);
-
   const updateField = useCallback(<K extends keyof AISettings>(key: K, value: AISettings[K]) => {
     setLocal((prev) => ({ ...prev, [key]: value }));
     setTestResult(null);
@@ -116,6 +107,17 @@ export function SettingsModal({
       setDetecting(false);
     }
   }, [local.apiKey, local.model]);
+
+  // Va despues de handleDetectModels a proposito: el efecto lo invoca, y
+  // declararlo antes rompia la regla de hooks y el lint del CI.
+  // Auto-detect models when Gemini is selected and there's an API key
+  useEffect(() => {
+    if (local.provider === 'gemini' && local.apiKey.trim() && !autoDetected) {
+      handleDetectModels();
+      setAutoDetected(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [local.provider]);
 
   const handleTest = useCallback(async () => {
     setTesting(true);
