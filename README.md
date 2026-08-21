@@ -23,6 +23,18 @@ Chatbot Vortex is a chat interface for working with multiple AI providers from a
 - Accessibility improvements: keyboard navigation, clearer focus states, and reduced motion when the system requests `prefers-reduced-motion`.
 - Cancel an in-progress response, with visible status and error notices.
 
+## Client-facing use cases
+
+This repository can accelerate prototypes for customer-support chat, internal
+knowledge assistants, file-review flows, and multi-provider model evaluation.
+The reusable evidence is the interaction layer: offline-first onboarding, BYOK
+settings, persistent searchable history, attachments, cancellation, error
+states, and JSON/Markdown export.
+
+It should not be sold as a production multi-user support platform without a
+backend that protects provider credentials and adds authentication, quotas,
+audit logs, and server-side observability.
+
 ## Stack
 
 - React 19
@@ -69,7 +81,7 @@ npm run build
 
 ## Configuration
 
-The app starts in `offline` mode by default. This avoids shipping a preconfigured key and lets you try the interface without touching any API.
+The app starts in `offline` mode by default. Current HEAD contains no bundled provider key, so you can try the interface without calling an external API.
 
 If you want to use a real provider:
 
@@ -81,6 +93,11 @@ If you want to use a real provider:
 ## Security
 
 The current version works with your own API key. When you choose a real provider, the key is used directly from the browser.
+
+GitHub secret scanning reports a Google API key in an older revision. That key
+must be treated as compromised and revoked or rotated before the alert is
+resolved. Current tracked files do not match the Google API key pattern, but a
+normal clone still includes repository history.
 
 That's good for:
 
